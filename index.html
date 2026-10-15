@@ -19,8 +19,12 @@
     <nav class="bg-blue-600 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-4xl mx-auto px-4 flex justify-between h-14 items-center">
             <div class="flex items-center space-x-2">
-                <!-- Icon chú chuột hamster nhúng trực tiếp -->
-                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23fbcfe8'/><text x='50%' y='55%' font-size='50' dominant-baseline='middle' text-anchor='middle'>🐹</text></svg>" alt="Logo" class="w-9 h-9 object-contain rounded-full bg-white p-0.5 shadow">
+                <!-- Icon 1 dấu chân mèo lớn SVG chuẩn -->
+                <div class="w-9 h-9 rounded-full bg-pink-100 flex items-center justify-center shadow p-1">
+                    <svg class="w-6 h-6 text-pink-500 fill-current" viewBox="0 0 24 24">
+                        <path d="M12 11.5c-2.5 0-4.5 1.8-4.5 4 0 2.2 2 4 4.5 4s4.5-1.8 4.5-4c0-2.2-2-4-4.5-4zm-5.5-2.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm11 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-8.5-4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>
+                    </svg>
+                </div>
                 <span class="text-lg font-bold tracking-wide">Sinnie's Store</span>
             </div>
             <div class="flex space-x-2">
@@ -199,7 +203,6 @@
             <p class="text-xs text-gray-500">Dùng thanh trượt zoom và kéo chuột/tay để dịch chuyển ảnh:</p>
             
             <div id="cropViewport" class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-lg border shadow-inner cursor-grab select-none flex items-center justify-center">
-                <!-- SỬA LỖI: Thêm class max-w-none để ảnh không bị bóp méo, đảm bảo hiển thị đúng tỷ lệ -->
                 <img id="cropImage" src="" class="absolute cursor-grab max-w-none" style="transform-origin: 0 0;">
             </div>
 
@@ -346,7 +349,6 @@
             reader.onload = function(e) {
                 cropImgObj.src = e.target.result;
                 cropImgObj.onload = function() {
-                    // SỬA LỖI: Hiển thị Modal ra trước để hệ thống đo được chiều rộng/cao
                     document.getElementById('cropModal').classList.remove('hidden');
 
                     const vp = document.getElementById('cropViewport');
