@@ -19,11 +19,9 @@
     <nav class="bg-blue-600 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-4xl mx-auto px-4 flex justify-between h-14 items-center">
             <div class="flex items-center space-x-2">
-                <!-- Icon 1 dấu chân mèo lớn SVG chuẩn -->
-                <div class="w-9 h-9 rounded-full bg-pink-100 flex items-center justify-center shadow p-1">
-                    <svg class="w-6 h-6 text-pink-500 fill-current" viewBox="0 0 24 24">
-                        <path d="M12 11.5c-2.5 0-4.5 1.8-4.5 4 0 2.2 2 4 4.5 4s4.5-1.8 4.5-4c0-2.2-2-4-4.5-4zm-5.5-2.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm11 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-8.5-4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/>
-                    </svg>
+                <!-- Logo tùy chỉnh dạng hình tròn -->
+                <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow overflow-hidden flex-shrink-0">
+                    <img id="storeLogoImg" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23fbcfe8'/><text x='50%' y='55%' font-size='50' dominant-baseline='middle' text-anchor='middle'>🐾</text></svg>" alt="Logo" class="w-full h-full object-cover">
                 </div>
                 <span class="text-lg font-bold tracking-wide">Sinnie's Store</span>
             </div>
@@ -134,7 +132,7 @@
                         <input type="number" id="newProductPrice" placeholder="Giá bán (VNĐ)..." class="w-full p-2 border rounded-md outline-none">
                         <div>
                             <label class="block text-sm text-gray-600 mb-1">Hình ảnh sản phẩm (Tỷ lệ chuẩn 4:3):</label>
-                            <input type="file" id="newProductImage" accept="image/*" onchange="handleImageSelection(event)" class="w-full p-2 border rounded-md outline-none text-sm">
+                            <input type="file" id="newProductImage" accept="image/*" onchange="handleImageSelection(event, 'product')" class="w-full p-2 border rounded-md outline-none text-sm">
                         </div>
                         <div class="flex space-x-2">
                             <button id="saveProductBtn" onclick="saveProduct()" class="bg-blue-600 text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 flex-1 transition">Thêm Sản Phẩm</button>
@@ -150,6 +148,21 @@
 
             <!-- Tab: Cài đặt -->
             <div id="adminSettings" class="hidden space-y-6">
+                <!-- Cấu hình Logo cửa hàng -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-lg mb-3">Logo / Icon Cửa hàng</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 rounded-full bg-gray-100 border p-1 overflow-hidden flex items-center justify-center flex-shrink-0">
+                            <img id="adminLogoPreview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23fbcfe8'/><text x='50%' y='55%' font-size='50' dominant-baseline='middle' text-anchor='middle'>🐾</text></svg>" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-grow space-y-2">
+                            <label class="block text-xs text-gray-600">Tải lên hình ảnh logo mới (Tỷ lệ 1:1 vuông):</label>
+                            <input type="file" id="logoInput" accept="image/*" onchange="handleImageSelection(event, 'logo')" class="w-full p-1 border rounded bg-white text-xs">
+                            <button onclick="saveLogoSettings()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-blue-700 transition">Lưu Logo Mới</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                     <h3 class="font-bold text-lg mb-3">Cấu hình Thanh toán (MoMo & ZaloPay)</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -199,7 +212,7 @@
     <!-- Modal Căn chỉnh Ảnh (Image Cropper / Positioner) -->
     <div id="cropModal" class="fixed inset-0 bg-black bg-opacity-70 hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-5 space-y-4">
-            <h3 class="text-lg font-bold text-gray-900">Căn chỉnh khung hình (Tỷ lệ 4:3)</h3>
+            <h3 id="cropTitle" class="text-lg font-bold text-gray-900">Căn chỉnh khung hình</h3>
             <p class="text-xs text-gray-500">Dùng thanh trượt zoom và kéo chuột/tay để dịch chuyển ảnh:</p>
             
             <div id="cropViewport" class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-lg border shadow-inner cursor-grab select-none flex items-center justify-center">
@@ -261,10 +274,12 @@
         let cart = {};
         let products = {};
         let paymentSettings = { momoQr: "", momoInfo: "", zaloQr: "", zaloInfo: "" };
+        let storeLogo = "";
         let currentAdminPassword = "123"; 
         let isAdminUnlocked = false;
         let rawOrdersData = {};
         let finalCroppedBase64 = "";
+        let currentCropType = "product"; // "product" hoac "logo"
 
         let cropImgObj = new Image();
         let imgX = 0, imgY = 0, imgScale = 1;
@@ -273,6 +288,17 @@
         function initData() {
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
+
+            // Load Logo
+            db.ref('settings/logo').on('value', (snapshot) => {
+                if(snapshot.exists()) {
+                    storeLogo = snapshot.val();
+                    if(storeLogo) {
+                        document.getElementById('storeLogoImg').src = storeLogo;
+                        document.getElementById('adminLogoPreview').src = storeLogo;
+                    }
+                }
+            });
 
             db.ref('settings/payment').on('value', (snapshot) => {
                 if(snapshot.exists()) {
@@ -341,9 +367,19 @@
             window.addEventListener('touchend', () => { isDragging = false; });
         }
 
-        function handleImageSelection(event) {
+        function handleImageSelection(event, type = 'product') {
             const file = event.target.files[0];
             if (!file) return;
+
+            currentCropType = type;
+            const vp = document.getElementById('cropViewport');
+            if (type === 'logo') {
+                vp.className = "relative w-full aspect-square bg-gray-100 overflow-hidden rounded-full border shadow-inner cursor-grab select-none flex items-center justify-center max-w-[250px] mx-auto";
+                document.getElementById('cropTitle').innerText = "Căn chỉnh Logo (Hình tròn 1:1)";
+            } else {
+                vp.className = "relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-lg border shadow-inner cursor-grab select-none flex items-center justify-center";
+                document.getElementById('cropTitle').innerText = "Căn chỉnh Sản phẩm (Tỷ lệ 4:3)";
+            }
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -351,7 +387,6 @@
                 cropImgObj.onload = function() {
                     document.getElementById('cropModal').classList.remove('hidden');
 
-                    const vp = document.getElementById('cropViewport');
                     const vpWidth = vp.clientWidth;
                     const vpHeight = vp.clientHeight;
 
@@ -397,13 +432,14 @@
 
         function closeCropModal() {
             document.getElementById('cropModal').classList.add('hidden');
-            document.getElementById('newProductImage').value = '';
+            if (currentCropType === 'logo') document.getElementById('logoInput').value = '';
+            else document.getElementById('newProductImage').value = '';
         }
 
         function confirmCropImage() {
             const vp = document.getElementById('cropViewport');
-            const targetW = 600;
-            const targetH = 450;
+            const targetW = currentCropType === 'logo' ? 300 : 600;
+            const targetH = currentCropType === 'logo' ? 300 : 450;
             
             const canvas = document.createElement('canvas');
             canvas.width = targetW;
@@ -425,7 +461,22 @@
 
             finalCroppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
             document.getElementById('cropModal').classList.add('hidden');
-            showModal('Đã cắt ảnh', 'Ảnh sản phẩm đã được căn chỉnh thành công và sẵn sàng lưu.');
+            
+            if (currentCropType === 'logo') {
+                document.getElementById('adminLogoPreview').src = finalCroppedBase64;
+                showModal('Đã cắt Logo', 'Ảnh logo đã sẵn sàng. Bấm nút "Lưu Logo Mới" để hoàn tất.');
+            } else {
+                showModal('Đã cắt ảnh', 'Ảnh sản phẩm đã được căn chỉnh thành công và sẵn sàng lưu.');
+            }
+        }
+
+        function saveLogoSettings() {
+            if (!finalCroppedBase64 || currentCropType !== 'logo') {
+                return showModal('Thông báo', 'Vui lòng chọn ảnh logo mới trước khi bấm lưu.');
+            }
+            db.ref('settings/logo').set(finalCroppedBase64).then(() => {
+                showModal('Thành công', 'Đã cập nhật Logo cửa hàng mới!');
+            });
         }
 
         function renderPaymentInfoForBuyer() {
@@ -706,7 +757,7 @@
             if(!name || isNaN(price)) return showModal('Lỗi', 'Nhập đầy đủ tên và giá sản phẩm hợp lệ.');
 
             let currentImg = editId && products[editId] ? products[editId].image : "";
-            let imageToSave = finalCroppedBase64 || currentImg;
+            let imageToSave = (currentCropType === 'product' && finalCroppedBase64) ? finalCroppedBase64 : currentImg;
 
             const productData = { name, price, image: imageToSave };
             if (editId) {
