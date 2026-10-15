@@ -199,7 +199,8 @@
             <p class="text-xs text-gray-500">Dùng thanh trượt zoom và kéo chuột/tay để dịch chuyển ảnh:</p>
             
             <div id="cropViewport" class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-lg border shadow-inner cursor-grab select-none flex items-center justify-center">
-                <img id="cropImage" src="" class="absolute cursor-grab max-none" style="transform-origin: 0 0;">
+                <!-- SỬA LỖI: Thêm class max-w-none để ảnh không bị bóp méo, đảm bảo hiển thị đúng tỷ lệ -->
+                <img id="cropImage" src="" class="absolute cursor-grab max-w-none" style="transform-origin: 0 0;">
             </div>
 
             <div class="flex items-center space-x-3">
@@ -345,6 +346,9 @@
             reader.onload = function(e) {
                 cropImgObj.src = e.target.result;
                 cropImgObj.onload = function() {
+                    // SỬA LỖI: Hiển thị Modal ra trước để hệ thống đo được chiều rộng/cao
+                    document.getElementById('cropModal').classList.remove('hidden');
+
                     const vp = document.getElementById('cropViewport');
                     const vpWidth = vp.clientWidth;
                     const vpHeight = vp.clientHeight;
@@ -363,8 +367,6 @@
                     const cropImgEl = document.getElementById('cropImage');
                     cropImgEl.src = cropImgObj.src;
                     updateCropImageTransform();
-
-                    document.getElementById('cropModal').classList.remove('hidden');
                 };
             };
             reader.readAsDataURL(file);
@@ -872,15 +874,4 @@
         function showModal(title, body, cb = null) {
             document.getElementById('modalTitle').innerText = title;
             document.getElementById('modalBody').innerText = body;
-            document.getElementById('customModal').classList.remove('hidden');
-            modalCb = cb;
-        }
-        function closeModal() {
-            document.getElementById('customModal').classList.add('hidden');
-            if(modalCb) { modalCb(); modalCb = null; }
-        }
-
-        window.addEventListener('DOMContentLoaded', initData);
-    </script>
-</body>
-</html>
+            document.getElementById('customModal
