@@ -874,4 +874,15 @@
         function showModal(title, body, cb = null) {
             document.getElementById('modalTitle').innerText = title;
             document.getElementById('modalBody').innerText = body;
-            document.getElementById('customModal
+            document.getElementById('customModal').classList.remove('hidden');
+            modalCb = cb;
+        }
+        function closeModal() {
+            document.getElementById('customModal').classList.add('hidden');
+            if(modalCb) { modalCb(); modalCb = null; }
+        }
+
+        window.addEventListener('DOMContentLoaded', initData);
+    </script>
+</body>
+</html>
