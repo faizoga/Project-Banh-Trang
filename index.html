@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Đặt Hàng Trực Tuyến</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+
+    <!-- Header Navigation -->
+    <nav class="bg-blue-600 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 flex justify-between h-14 items-center">
+            <h1 class="text-lg font-bold">🛒 SmartOrder</h1>
+            <div class="flex space-x-2">
+                <button onclick="switchTab('buyer')" id="navBuyer" class="px-3 py-1 bg-white text-blue-600 rounded-md font-semibold text-sm transition">Người Mua</button>
+                <button onclick="switchTab('seller')" id="navSeller" class="px-3 py-1 bg-blue-700 text-white rounded-md font-semibold text-sm transition hover:bg-blue-800">Người Bán</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto p-4 space-y-6">
+        
+        <!-- ================= GIAO DIỆN NGƯỜI MUA ================= -->
+        <div id="buyerView" class="space-y-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Danh sách Sản phẩm</h2>
+                <div id="buyerProductList" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div class="col-span-full text-center text-gray-500 py-8"><div class="loader mx-auto mb-2"></div> Đang tải dữ liệu...</div>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Giỏ hàng của bạn</h2>
+                <div id="cartContainer" class="space-y-3 mb-4 empty:text-gray-500 text-sm">Chưa có sản phẩm nào.</div>
+                <div class="flex justify-between items-center font-bold text-lg border-t pt-3">
+                    <span>Tổng tiền:</span>
+                    <span id="cartTotal" class="text-red-600">0đ</span>
+                </div>
+            </div>
+
+            <!-- Thông tin người đặt và Thanh toán -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                <h2 class="text-xl font-bold text-gray-800">Thông tin người đặt</h2>
+                <div class="space-y-3">
+                    <input type="text" id="customerName" placeholder="Họ và tên người đặt" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                    <button onclick="placeOrder()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg shadow transition">XÁC NHẬN ĐẶT HÀNG</button>
+                </div>
+
+                <div id="buyerPaymentInfo" class="hidden bg-blue-50 p-4 rounded-lg border border-blue-100 text-center mt-4 space-y-3">
+                     <p class="font-semibold text-blue-800">Thông tin thanh toán:</p>
+                     
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <!-- Momo QR -->
+                          <div id="momoContainer" class="hidden bg-white p-3 rounded-lg border shadow-sm flex flex-col items-center">
+                              <img id="buyerMomoImg" src="" class="h-36 object-contain rounded mb-2 border p-1">
+                              <span class="inline-block bg-pink-100 text-pink-700 text-xs font-bold px-2.5 py-1 rounded-full mb-1">💜 Ví MoMo</span>
+                              <div id="buyerMomoInfo" class="text-xs text-gray-600 whitespace-pre-wrap"></div>
+                          </div>
+                          <!-- ZaloPay QR -->
+                          <div id="zaloContainer" class="hidden bg-white p-3 rounded-lg border shadow-sm flex flex-col items-center">
+                              <img id="buyerZaloImg" src="" class="h-36 object-contain rounded mb-2 border p-1">
+                              <span class="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full mb-1">💙 ZaloPay</span>
+                              <div id="buyerZaloInfo" class="text-xs text-gray-600 whitespace-pre-wrap"></div>
+                          </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= GIAO DIỆN NGƯỜI BÁN (ADMIN) ================= -->
+        <div id="sellerView" class="hidden space-y-6">
+            <div class="flex justify-between items-center border-b pb-2">
+                <div class="flex space-x-2">
+                    <button onclick="switchAdminTab('orders')" id="tabOrders" class="px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold">Đơn hàng</button>
+                    <button onclick="switchAdminTab('products')" id="tabProducts" class="px-4 py-2 text-gray-500 font-semibold hover:text-blue-600 transition">Sản phẩm</button>
+                    <button onclick="switchAdminTab('settings')" id="tabSettings" class="px-4 py-2 text-gray-500 font-semibold hover:text-blue-600 transition">Cài đặt</button>
+                </div>
+                <button onclick="adminLogout()" class="text-sm bg-red-100 text-red-600 px-3 py-1.5 rounded font-semibold hover:bg-red-200 transition">Đăng xuất</button>
+            </div>
+
+            <!-- Tab: Quản lý Đơn hàng -->
+            <div id="adminOrders" class="space-y-4">
+                <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl shadow-sm space-y-3">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-3">
+                        <div class="flex items-center space-x-2 w-full md:w-auto">
+                            <label class="font-semibold text-sm text-indigo-900 whitespace-nowrap">📅 Lọc theo ngày:</label>
+                            <input type="date" id="filterDate" onchange="filterOrdersByDate()" class="p-2 border rounded-md bg-white text-sm outline-none flex-grow">
+                            <button onclick="clearDateFilter()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm font-semibold transition">Xem tất cả</button>
+                        </div>
+                        <div class="text-sm text-indigo-900 font-bold" id="filterStatusText">Hiển thị toàn bộ đơn hàng</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm pt-2 border-t border-indigo-100">
+                        <div class="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm">
+                            <span class="font-semibold text-gray-600 block mb-1">Tổng số lượng theo từng loại:</span>
+                            <div id="summaryProductCounts" class="space-y-1 text-indigo-900 font-medium">Đang tính toán...</div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm flex flex-col justify-between">
+                            <span class="font-semibold text-gray-600 block mb-1">Tổng số lượng đơn hàng:</span>
+                            <div class="text-2xl font-extrabold text-blue-600" id="summaryTotalOrders">0 đơn hàng</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 class="text-xl font-bold text-gray-800">Danh sách Đơn hàng</h2>
+                <div id="orderList" class="space-y-4">
+                    <div class="text-center text-gray-500 py-8">Chưa có đơn hàng nào.</div>
+                </div>
+            </div>
+
+            <!-- Tab: Quản lý Sản phẩm -->
+            <div id="adminProducts" class="hidden space-y-6">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h3 id="productFormTitle" class="font-bold text-lg mb-3">Thêm sản phẩm mới</h3>
+                    <input type="hidden" id="editProductId" value="">
+                    <div class="space-y-3">
+                        <input type="text" id="newProductName" placeholder="Tên sản phẩm..." class="w-full p-2 border rounded-md outline-none">
+                        <input type="number" id="newProductPrice" placeholder="Giá bán (VNĐ)..." class="w-full p-2 border rounded-md outline-none">
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Hình ảnh sản phẩm (Tỷ lệ chuẩn 4:3):</label>
+                            <input type="file" id="newProductImage" accept="image/*" onchange="handleImageSelection(event)" class="w-full p-2 border rounded-md outline-none text-sm">
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="saveProductBtn" onclick="saveProduct()" class="bg-blue-600 text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 flex-1 transition">Thêm Sản Phẩm</button>
+                            <button id="cancelEditBtn" onclick="resetProductForm()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold hover:bg-gray-400 hidden transition">Hủy</button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg mb-3">Sản phẩm đang bán</h3>
+                    <div id="adminProductList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Cài đặt -->
+            <div id="adminSettings" class="hidden space-y-6">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-lg mb-3">Cấu hình Thanh toán (MoMo & ZaloPay)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-3 bg-pink-50 p-3 rounded-lg border border-pink-100">
+                            <h4 class="font-bold text-pink-700">💜 Ví MoMo</h4>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Mã QR MoMo:</label>
+                                <input type="file" id="momoQrInput" accept="image/*" class="w-full p-1 border rounded bg-white text-xs">
+                                <img id="momoPreview" src="" class="mt-2 h-24 object-contain hidden border rounded p-1 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Thông tin MoMo (SĐT, Tên):</label>
+                                <textarea id="momoInfoInput" rows="2" placeholder="SĐT, Tên chủ ví..." class="w-full p-2 border rounded text-sm outline-none"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            <h4 class="font-bold text-blue-700">💙 ZaloPay</h4>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Mã QR ZaloPay:</label>
+                                <input type="file" id="zaloQrInput" accept="image/*" class="w-full p-1 border rounded bg-white text-xs">
+                                <img id="zaloPreview" src="" class="mt-2 h-24 object-contain hidden border rounded p-1 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Thông tin ZaloPay (SĐT, Tên):</label>
+                                <textarea id="zaloInfoInput" rows="2" placeholder="SĐT, Tên chủ ví..." class="w-full p-2 border rounded text-sm outline-none"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="savePaymentSettings()" class="bg-green-600 text-white px-4 py-2 rounded-md font-bold hover:bg-green-700 w-full mt-4 transition">Lưu Cấu Hình Thanh Toán</button>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-lg mb-3">Đổi mật khẩu Quản trị</h3>
+                    <div class="space-y-3">
+                        <input type="password" id="oldPwd" placeholder="Mật khẩu hiện tại..." class="w-full p-2 border rounded-md outline-none">
+                        <input type="password" id="newPwd" placeholder="Mật khẩu mới..." class="w-full p-2 border rounded-md outline-none">
+                        <input type="password" id="confirmNewPwd" placeholder="Xác nhận mật khẩu mới..." class="w-full p-2 border rounded-md outline-none">
+                        <button onclick="changePassword()" class="bg-blue-600 text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 w-full transition">Đổi Mật Khẩu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Căn chỉnh Ảnh (Image Cropper / Positioner) -->
+    <div id="cropModal" class="fixed inset-0 bg-black bg-opacity-70 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-5 space-y-4">
+            <h3 class="text-lg font-bold text-gray-900">Căn chỉnh khung hình (Tỷ lệ 4:3)</h3>
+            <p class="text-xs text-gray-500">Dùng thanh trượt zoom và kéo chuột/tay để dịch chuyển ảnh:</p>
+            
+            <!-- Khung xem trước tỷ lệ 4:3 -->
+            <div id="cropViewport" class="relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-lg border shadow-inner cursor-grab select-none flex items-center justify-center">
+                <img id="cropImage" src="" class="absolute cursor-grab max-none" style="transform-origin: 0 0;">
+            </div>
+
+            <!-- Thanh trượt Zoom -->
+            <div class="flex items-center space-x-3">
+                <span class="text-xs font-semibold text-gray-600">Thu nhỏ</span>
+                <input type="range" id="zoomRange" min="0.1" max="5" step="0.01" value="1" oninput="onZoomChange(this.value)" class="w-full accent-blue-600">
+                <span class="text-xs font-semibold text-gray-600">Phóng to</span>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeCropModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-semibold text-sm">Hủy</button>
+                <button onclick="confirmCropImage()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold text-sm">Xác nhận cắt ảnh</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Thông báo -->
+    <div id="customModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div class="p-6 text-center">
+                <h3 id="modalTitle" class="text-lg font-bold text-gray-900 mb-2">Thông báo</h3>
+                <div id="modalBody" class="text-gray-600 mb-6 text-sm"></div>
+                <button onclick="closeModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 w-full">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nhập mật khẩu Admin -->
+    <div id="pwdModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm">
+            <div class="p-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Khu vực Quản lý</h3>
+                <p class="text-sm text-gray-500 mb-4">Vui lòng nhập mật khẩu để truy cập.</p>
+                <input type="password" id="adminPwdInput" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none mb-4" placeholder="Nhập mật khẩu...">
+                <div class="flex space-x-2">
+                    <button onclick="cancelPwd()" class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300">Hủy</button>
+                    <button onclick="checkPwd()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8e3RuSnXpbKu8LsySnvZ3geZ7lSX096s",
+            authDomain: "he-thong-ban-hang-e7d96.firebaseapp.com",
+            databaseURL: "https://he-thong-ban-hang-e7d96-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "he-thong-ban-hang-e7d96",
+            storageBucket: "he-thong-ban-hang-e7d96.appspot.com",
+            messagingSenderId: "316466346142",
+            appId: "1:316466346142:web:178f2eb23a4e21102f638f",
+            measurementId: "G-RCKGQHXDS3"
+        };
+        
+        let db = null;
+        let cart = {};
+        let products = {};
+        let paymentSettings = { momoQr: "", momoInfo: "", zaloQr: "", zaloInfo: "" };
+        let currentAdminPassword = "123"; 
+        let isAdminUnlocked = false;
+        let rawOrdersData = {};
+        let finalCroppedBase64 = "";
+
+        // Biến phục vụ căn chỉnh ảnh
+        let cropImgObj = new Image();
+        let imgX = 0, imgY = 0, imgScale = 1;
+        let isDragging = false, startX = 0, startY = 0;
+
+        function initData() {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+
+            db.ref('settings/payment').on('value', (snapshot) => {
+                if(snapshot.exists()) {
+                    paymentSettings = snapshot.val();
+                    if(paymentSettings.momoQr) {
+                        document.getElementById('momoPreview').src = paymentSettings.momoQr;
+                        document.getElementById('momoPreview').classList.remove('hidden');
+                    }
+                    document.getElementById('momoInfoInput').value = paymentSettings.momoInfo || "";
+
+                    if(paymentSettings.zaloQr) {
+                        document.getElementById('zaloPreview').src = paymentSettings.zaloQr;
+                        document.getElementById('zaloPreview').classList.remove('hidden');
+                    }
+                    document.getElementById('zaloInfoInput').value = paymentSettings.zaloInfo || "";
+
+                    renderPaymentInfoForBuyer();
+                }
+            });
+
+            db.ref('settings/password').on('value', (snapshot) => {
+                if(snapshot.exists()) currentAdminPassword = snapshot.val();
+            });
+
+            db.ref('products').on('value', (snapshot) => {
+                products = snapshot.exists() ? snapshot.val() : {};
+                renderProductsForBuyer();
+                renderProductsForAdmin();
+            });
+
+            db.ref('orders').on('value', (snapshot) => {
+                rawOrdersData = snapshot.val() || {};
+                renderOrderListFromData(rawOrdersData);
+            });
+
+            setupCropperEvents();
+        }
+
+        function setupCropperEvents() {
+            const vp = document.getElementById('cropViewport');
+
+            vp.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX - imgX;
+                startY = e.clientY - imgY;
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                imgX = e.clientX - startX;
+                imgY = e.clientY - startY;
+                updateCropImageTransform();
+            });
+            window.addEventListener('mouseup', () => { isDragging = false; });
+
+            vp.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                startX = e.touches[0].clientX - imgX;
+                startY = e.touches[0].clientY - imgY;
+            });
+            window.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                imgX = e.touches[0].clientX - startX;
+                imgY = e.touches[0].clientY - startY;
+                updateCropImageTransform();
+            });
+            window.addEventListener('touchend', () => { isDragging = false; });
+        }
+
+        function handleImageSelection(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                cropImgObj.src = e.target.result;
+                cropImgObj.onload = function() {
+                    const vp = document.getElementById('cropViewport');
+                    const vpWidth = vp.clientWidth;
+                    const vpHeight = vp.clientHeight;
+
+                    let scaleX = vpWidth / cropImgObj.width;
+                    let scaleY = vpHeight / cropImgObj.height;
+                    imgScale = Math.max(scaleX, scaleY);
+
+                    document.getElementById('zoomRange').min = imgScale * 0.2;
+                    document.getElementById('zoomRange').max = imgScale * 5;
+                    document.getElementById('zoomRange').value = imgScale;
+
+                    imgX = (vpWidth - cropImgObj.width * imgScale) / 2;
+                    imgY = (vpHeight - cropImgObj.height * imgScale) / 2;
+
+                    const cropImgEl = document.getElementById('cropImage');
+                    cropImgEl.src = cropImgObj.src;
+                    updateCropImageTransform();
+
+                    document.getElementById('cropModal').classList.remove('hidden');
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateCropImageTransform() {
+            const cropImgEl = document.getElementById('cropImage');
+            cropImgEl.style.width = (cropImgObj.width * imgScale) + 'px';
+            cropImgEl.style.height = (cropImgObj.height * imgScale) + 'px';
+            cropImgEl.style.transform = `translate(${imgX}px, ${imgY}px)`;
+        }
+
+        function onZoomChange(val) {
+            const vp = document.getElementById('cropViewport');
+            let oldScale = imgScale;
+            imgScale = parseFloat(val);
+
+            let centerX = vp.clientWidth / 2;
+            let centerY = vp.clientHeight / 2;
+
+            imgX = centerX - (centerX - imgX) * (imgScale / oldScale);
+            imgY = centerY - (centerY - imgY) * (imgScale / oldScale);
+
+            updateCropImageTransform();
+        }
+
+        function closeCropModal() {
+            document.getElementById('cropModal').classList.add('hidden');
+            document.getElementById('newProductImage').value = '';
+        }
+
+        function confirmCropImage() {
+            const vp = document.getElementById('cropViewport');
+            const targetW = 600;
+            const targetH = 450;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = targetW;
+            canvas.height = targetH;
+            const ctx = canvas.getContext('2d');
+
+            let renderScale = targetW / vp.clientWidth;
+
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, targetW, targetH);
+
+            ctx.drawImage(
+                cropImgObj,
+                imgX * renderScale,
+                imgY * renderScale,
+                cropImgObj.width * imgScale * renderScale,
+                cropImgObj.height * imgScale * renderScale
+            );
+
+            finalCroppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+            document.getElementById('cropModal').classList.add('hidden');
+            showModal('Đã cắt ảnh', 'Ảnh sản phẩm đã được căn chỉnh thành công và sẵn sàng lưu.');
+        }
+
+        function renderPaymentInfoForBuyer() {
+            const container = document.getElementById('buyerPaymentInfo');
+            const momoContainer = document.getElementById('momoContainer');
+            const zaloContainer = document.getElementById('zaloContainer');
+
+            const momoImg = document.getElementById('buyerMomoImg');
+            const momoInfo = document.getElementById('buyerMomoInfo');
+            
+            const zaloImg = document.getElementById('buyerZaloImg');
+            const zaloInfo = document.getElementById('buyerZaloInfo');
+
+            let hasMomo = paymentSettings.momoQr || paymentSettings.momoInfo;
+            let hasZalo = paymentSettings.zaloQr || paymentSettings.zaloInfo;
+
+            if (hasMomo || hasZalo) {
+                container.classList.remove('hidden');
+
+                if (hasMomo) {
+                    momoContainer.classList.remove('hidden');
+                    if (paymentSettings.momoQr) {
+                        momoImg.src = paymentSettings.momoQr;
+                        momoImg.classList.remove('hidden');
+                    } else {
+                        momoImg.classList.add('hidden');
+                    }
+                    momoInfo.innerText = paymentSettings.momoInfo || "";
+                } else {
+                    momoContainer.classList.add('hidden');
+                }
+
+                if (hasZalo) {
+                    zaloContainer.classList.remove('hidden');
+                    if (paymentSettings.zaloQr) {
+                        zaloImg.src = paymentSettings.zaloQr;
+                        zaloImg.classList.remove('hidden');
+                    } else {
+                        zaloImg.classList.add('hidden');
+                    }
+                    zaloInfo.innerText = paymentSettings.zaloInfo || "";
+                } else {
+                    zaloContainer.classList.add('hidden');
+                }
+
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function renderProductsForBuyer() {
+            const list = document.getElementById('buyerProductList');
+            list.innerHTML = '';
+            if(Object.keys(products).length === 0) {
+                list.innerHTML = '<div class="col-span-full text-center text-gray-500 py-4">Chưa có sản phẩm nào.</div>';
+                return;
+            }
+            for(let id in products) {
+                const p = products[id];
+                const qty = cart[id] ? cart[id].qty : 0;
+                list.innerHTML += `
+                    <div class="border rounded-lg overflow-hidden flex flex-col shadow-sm bg-white">
+                        <div class="w-full aspect-[4/3] bg-gray-100 overflow-hidden">
+                            <img src="${p.image || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-3 flex flex-col flex-grow">
+                            <div class="font-semibold text-gray-800 text-sm mb-1 flex-grow">${p.name}</div>
+                            <div class="text-red-600 font-bold text-sm mb-3">${formatPrice(p.price)}</div>
+                            ${qty === 0 
+                                ? `<button onclick="changeQty('${id}', 1)" class="w-full bg-blue-50 text-blue-600 border border-blue-200 py-1.5 rounded text-sm font-bold">Thêm</button>`
+                                : `<div class="flex items-center justify-between bg-blue-50 rounded border border-blue-200 p-1">
+                                    <button onclick="changeQty('${id}', -1)" class="w-8 h-6 bg-white text-blue-600 font-bold">-</button>
+                                    <span class="font-bold text-blue-800">${qty}</span>
+                                    <button onclick="changeQty('${id}', 1)" class="w-8 h-6 bg-white text-blue-600 font-bold">+</button>
+                                   </div>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function changeQty(id, delta) {
+            if (!cart[id] && delta > 0) {
+                cart[id] = { qty: 1, name: products[id].name, price: products[id].price, image: products[id].image }; 
+            } else if (cart[id]) {
+                cart[id].qty += delta;
+                if (cart[id].qty <= 0) delete cart[id];
+            }
+            renderProductsForBuyer();
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartContainer');
+            const totalEl = document.getElementById('cartTotal');
+            container.innerHTML = '';
+            let total = 0;
+            for (let id in cart) {
+                const item = cart[id];
+                const itemTotal = item.price * item.qty;
+                total += itemTotal;
+                container.innerHTML += `
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <div><div class="font-semibold">${item.name}</div><div class="text-gray-500 text-xs">${formatPrice(item.price)} x ${item.qty}</div></div>
+                        <div class="font-bold">${formatPrice(itemTotal)}</div>
+                    </div>
+                `;
+            }
+            if(Object.keys(cart).length === 0) container.innerHTML = 'Chưa có sản phẩm nào.';
+            totalEl.innerText = formatPrice(total);
+        }
+
+        function placeOrder() {
+            if (Object.keys(cart).length === 0) return showModal('Giỏ hàng trống', 'Vui lòng chọn ít nhất 1 sản phẩm.');
+            const name = document.getElementById('customerName').value.trim();
+            if (!name) return showModal('Thiếu thông tin', 'Vui lòng nhập tên người đặt.');
+
+            db.ref('orders').push({
+                customer: { name },
+                items: cart,
+                timestamp: Date.now(),
+                status: 'pending'
+            }).then(() => {
+                showModal('Đặt hàng thành công!', 'Đơn hàng đã được gửi đến người bán.');
+                cart = {};
+                document.getElementById('customerName').value = '';
+                renderProductsForBuyer();
+                renderCart();
+            });
+        }
+
+        function filterOrdersByDate() {
+            const selectedDateVal = document.getElementById('filterDate').value;
+            if (!selectedDateVal) {
+                renderOrderListFromData(rawOrdersData);
+                return;
+            }
+
+            let filtered = {};
+            for (let key in rawOrdersData) {
+                let order = rawOrdersData[key];
+                if (order.timestamp) {
+                    let d = new Date(order.timestamp);
+                    let year = d.getFullYear();
+                    let month = String(d.getMonth() + 1).padStart(2, '0');
+                    let day = String(d.getDate()).padStart(2, '0');
+                    let orderDateStr = `${year}-${month}-${day}`;
+
+                    if (orderDateStr === selectedDateVal) {
+                        filtered[key] = order;
+                    }
+                }
+            }
+            document.getElementById('filterStatusText').innerText = `Đang lọc ngày: ${selectedDateVal.split('-').reverse().join('/')}`;
+            renderOrderListFromData(filtered);
+        }
+
+        function clearDateFilter() {
+            document.getElementById('filterDate').value = '';
+            document.getElementById('filterStatusText').innerText = 'Hiển thị toàn bộ đơn hàng';
+            renderOrderListFromData(rawOrdersData);
+        }
+
+        function renderOrderListFromData(dataObject) {
+            const orderList = document.getElementById('orderList');
+            const summaryCountsEl = document.getElementById('summaryProductCounts');
+            const summaryTotalOrdersEl = document.getElementById('summaryTotalOrders');
+            
+            orderList.innerHTML = '';
+            let totalRevenue = 0;
+            let count = 0;
+            let productTotals = {};
+
+            const sortedKeys = Object.keys(dataObject).sort((a, b) => dataObject[b].timestamp - dataObject[a].timestamp);
+
+            sortedKeys.forEach(key => {
+                const data = dataObject[key];
+                let itemsHtml = '';
+                let orderTotal = 0;
+                
+                for (let itemKey in data.items) {
+                    const item = data.items[itemKey];
+                    itemsHtml += `
+                        <div class="flex items-center space-x-3 mb-2">
+                            <img src="${item.image || ''}" class="w-10 h-10 object-cover rounded border">
+                            <div>
+                                <span class="text-sm font-medium text-gray-700">${item.name}</span>
+                                <span class="text-sm text-gray-500 block">x${item.qty}</span>
+                            </div>
+                        </div>
+                    `;
+                    orderTotal += item.price * item.qty;
+
+                    if (!productTotals[item.name]) productTotals[item.name] = 0;
+                    productTotals[item.name] += item.qty;
+                }
+
+                if(data.status === 'completed') totalRevenue += orderTotal;
+
+                const isCompleted = data.status === 'completed';
+                const customerName = data.customer && data.customer.name ? data.customer.name : "Khách vãng lai";
+                
+                let dateStr = "";
+                if (data.timestamp) {
+                    let d = new Date(data.timestamp);
+                    dateStr = d.toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+                }
+
+                orderList.innerHTML += `
+                    <div class="p-4 rounded-xl border shadow-sm ${isCompleted ? 'bg-gray-100 opacity-70' : 'bg-white'}">
+                        <div class="mb-3 border-b pb-2 flex justify-between items-center">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-500 font-semibold">Người đặt:</span>
+                                <span class="text-base font-bold text-blue-600 bg-blue-50 px-3 py-0.5 rounded-full">${customerName}</span>
+                            </div>
+                            <div class="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded">🕒 ${dateStr}</div>
+                        </div>
+                        <div class="border-l-2 pl-2 mb-3">${itemsHtml}</div>
+                        <div class="font-bold text-red-600 mb-3">Tổng: ${formatPrice(orderTotal)}</div>
+                        <div class="flex space-x-2">
+                            <button onclick="updateOrderStatus('${key}', '${isCompleted ? 'pending' : 'completed'}')" class="flex-1 ${isCompleted ? 'bg-yellow-500' : 'bg-green-500'} text-white py-1.5 rounded text-sm font-semibold">${isCompleted ? 'Hủy Xong' : 'Xong'}</button>
+                            <button onclick="deleteOrder('${key}')" class="flex-1 bg-red-500 text-white py-1.5 rounded text-sm font-semibold">Xóa</button>
+                        </div>
+                    </div>
+                `;
+                count++;
+            });
+
+            summaryTotalOrdersEl.innerText = count + " đơn hàng";
+
+            if (Object.keys(productTotals).length > 0) {
+                let countsHtml = "";
+                for (let prodName in productTotals) {
+                    countsHtml += `<div>• ${prodName}: <strong class="text-indigo-700">${productTotals[prodName]}</strong></div>`;
+                }
+                summaryCountsEl.innerHTML = countsHtml;
+            } else {
+                summaryCountsEl.innerHTML = "Chưa có sản phẩm nào được đặt.";
+            }
+
+            if (count === 0) {
+                orderList.innerHTML = '<div class="text-center text-gray-500 py-8">Không có đơn hàng nào trong ngày này.</div>';
+            } else {
+                orderList.innerHTML = `<div class="bg-green-100 text-green-800 p-3 rounded-lg font-bold text-center mb-4">Doanh thu đã xử lý: ${formatPrice(totalRevenue)}</div>` + orderList.innerHTML;
+            }
+        }
+
+        function renderProductsForAdmin() {
+            const list = document.getElementById('adminProductList');
+            list.innerHTML = '';
+            for(let id in products) {
+                const p = products[id];
+                list.innerHTML += `
+                    <div class="border rounded-lg p-3 flex items-center bg-gray-50 shadow-sm">
+                        <img src="${p.image || ''}" class="w-12 h-12 rounded object-cover mr-3 border">
+                        <div class="flex-grow"><div class="font-bold text-sm">${p.name}</div><div class="text-red-600 text-sm">${formatPrice(p.price)}</div></div>
+                        <button onclick="editProduct('${id}')" class="text-blue-500 p-2 hover:bg-blue-100 rounded mr-1" title="Sửa">✏️</button>
+                        <button onclick="deleteProduct('${id}')" class="text-red-500 p-2 hover:bg-red-100 rounded" title="Xóa">🗑️</button>
+                    </div>
+                `;
+            }
+        }
+
+        function fileToBase64(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                callback(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveProduct() {
+            const editId = document.getElementById('editProductId').value;
+            const name = document.getElementById('newProductName').value.trim();
+            const price = parseInt(document.getElementById('newProductPrice').value);
+
+            if(!name || isNaN(price)) return showModal('Lỗi', 'Nhập đầy đủ tên và giá sản phẩm hợp lệ.');
+
+            let currentImg = editId && products[editId] ? products[editId].image : "";
+            let imageToSave = finalCroppedBase64 || currentImg;
+
+            const productData = { name, price, image: imageToSave };
+            if (editId) {
+                db.ref('products/' + editId).update(productData).then(() => {
+                    showModal('Thành công', 'Đã cập nhật thông tin sản phẩm.');
+                    resetProductForm();
+                });
+            } else {
+                db.ref('products').push(productData).then(() => {
+                    showModal('Thành công', 'Đã thêm sản phẩm mới.');
+                    resetProductForm();
+                });
+            }
+        }
+
+        function editProduct(id) {
+            const p = products[id];
+            if(!p) return;
+            document.getElementById('editProductId').value = id;
+            document.getElementById('newProductName').value = p.name;
+            document.getElementById('newProductPrice').value = p.price;
+            document.getElementById('productFormTitle').innerText = "Cập nhật sản phẩm";
+            document.getElementById('saveProductBtn').innerText = "Lưu Thay Đổi";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            finalCroppedBase64 = "";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetProductForm() {
+            document.getElementById('editProductId').value = '';
+            document.getElementById('newProductName').value = '';
+            document.getElementById('newProductPrice').value = '';
+            document.getElementById('newProductImage').value = '';
+            document.getElementById('productFormTitle').innerText = "Thêm sản phẩm mới";
+            document.getElementById('saveProductBtn').innerText = "Thêm Sản Phẩm";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            finalCroppedBase64 = "";
+        }
+
+        function deleteProduct(id) {
+            db.ref('products/' + id).remove();
+        }
+
+        function savePaymentSettings() {
+            const momoInfo = document.getElementById('momoInfoInput').value;
+            const zaloInfo = document.getElementById('zaloInfoInput').value;
+            const momoFile = document.getElementById('momoQrInput');
+            const zaloFile = document.getElementById('zaloQrInput');
+
+            let newSettings = {
+                momoQr: paymentSettings.momoQr || "",
+                momoInfo: momoInfo,
+                zaloQr: paymentSettings.zaloQr || "",
+                zaloInfo: zaloInfo
+            };
+
+            let processed = 0;
+            let totalToProcess = (momoFile.files.length > 0 ? 1 : 0) + (zaloFile.files.length > 0 ? 1 : 0);
+
+            if (totalToProcess === 0) {
+                db.ref('settings/payment').set(newSettings).then(() => showModal('Thành công', 'Đã lưu cấu hình thanh toán.'));
+                return;
+            }
+
+            if (momoFile.files.length > 0) {
+                fileToBase64(momoFile.files[0], (base64) => {
+                    newSettings.momoQr = base64;
+                    processed++;
+                    if (processed === totalToProcess) {
+                        db.ref('settings/payment').set(newSettings).then(() => showModal('Thành công', 'Đã lưu cấu hình thanh toán.'));
+                    }
+                });
+            }
+
+            if (zaloFile.files.length > 0) {
+                fileToBase64(zaloFile.files[0], (base64) => {
+                    newSettings.zaloQr = base64;
+                    processed++;
+                    if (processed === totalToProcess) {
+                        db.ref('settings/payment').set(newSettings).then(() => showModal('Thành công', 'Đã lưu cấu hình thanh toán.'));
+                    }
+                });
+            }
+        }
+
+        function changePassword() {
+            const oldP = document.getElementById('oldPwd').value;
+            const newP = document.getElementById('newPwd').value;
+            const confP = document.getElementById('confirmNewPwd').value;
+
+            if (!oldP || !newP || !confP) return showModal('Lỗi', 'Vui lòng nhập đầy đủ thông tin mật khẩu.');
+            if (newP !== confP) return showModal('Lỗi', 'Mật khẩu mới không khớp.');
+
+            db.ref('settings/adminAccount').once('value').then(snapshot => {
+                const acc = snapshot.val() || { email: "haiconheo1306@gmail.com", password: "123" };
+                if (oldP !== acc.password) return showModal('Lỗi', 'Mật khẩu hiện tại không đúng.');
+
+                db.ref('settings/adminAccount').set({ email: acc.email, password: newP }).then(() => {
+                    document.getElementById('oldPwd').value = '';
+                    document.getElementById('newPwd').value = '';
+                    document.getElementById('confirmNewPwd').value = '';
+                    showModal('Thành công', 'Đã đổi mật khẩu quản trị thành công!');
+                });
+            });
+        }
+
+        function updateOrderStatus(id, status) {
+            db.ref('orders/' + id).update({ status: status });
+        }
+
+        function deleteOrder(id) {
+            showModal('Xác nhận', 'Bạn có muốn xóa đơn hàng này?', () => db.ref('orders/' + id).remove());
+        }
+
+        function switchTab(tab) {
+            if (tab === 'seller') {
+                if (!isAdminUnlocked) {
+                    document.getElementById('pwdModal').classList.add('hidden'); // Fix z-index modal
+                    document.getElementById('pwdModal').classList.remove('hidden');
+                    return;
+                }
+            }
+            document.getElementById('buyerView').classList.add('hidden');
+            document.getElementById('sellerView').classList.add('hidden');
+            if (tab === 'buyer') document.getElementById('buyerView').classList.remove('hidden');
+            else document.getElementById('sellerView').classList.remove('hidden');
+        }
+
+        function cancelPwd() {
+            document.getElementById('pwdModal').classList.add('hidden');
+            document.getElementById('adminPwdInput').value = '';
+        }
+
+        function checkPwd() {
+            const pwd = document.getElementById('adminPwdInput').value;
+            db.ref('settings/adminAccount').once('value').then(snapshot => {
+                const acc = snapshot.val() || { password: "123" };
+                if (pwd === acc.password) {
+                    isAdminUnlocked = true;
+                    document.getElementById('pwdModal').classList.add('hidden');
+                    document.getElementById('adminPwdInput').value = '';
+                    switchTab('seller');
+                } else {
+                    showModal('Lỗi', 'Mật khẩu không chính xác!');
+                }
+            });
+        }
+
+        function adminLogout() {
+            isAdminUnlocked = false;
+            switchTab('buyer');
+            showModal('Đăng xuất', 'Đã thoát phiên quản trị an toàn.');
+        }
+
+        function switchAdminTab(tab) {
+            ['Orders', 'Products', 'Settings'].forEach(t => {
+                document.getElementById('admin' + t).classList.add('hidden');
+                document.getElementById('tab' + t).className = "px-4 py-2 text-gray-500 font-semibold";
+            });
+            document.getElementById('admin' + (tab.charAt(0).toUpperCase() + tab.slice(1))).classList.remove('hidden');
+            document.getElementById('tab' + (tab.charAt(0).toUpperCase() + tab.slice(1))).className = "px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold";
+        }
+
+        function formatPrice(num) { return num.toLocaleString('vi-VN') + 'đ'; }
+
+        let modalCb = null;
+        function showModal(title, body, cb = null) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerText = body;
+            document.getElementById('customModal').classList.remove('hidden');
+            modalCb = cb;
+        }
+        function closeModal() {
+            document.getElementById('customModal').classList.add('hidden');
+            if(modalCb) { modalCb(); modalCb = null; }
+        }
+
+        window.addEventListener('DOMContentLoaded', initData);
+    </script>
+</body>
+</html>
