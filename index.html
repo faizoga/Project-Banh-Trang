@@ -11,6 +11,9 @@
     <style>
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Tùy chỉnh ẩn thanh cuộn ngang cho mượt */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans antialiased">
@@ -26,8 +29,8 @@
                 <span class="text-lg font-bold tracking-wide">Sinnie's Store</span>
             </div>
             <div class="flex space-x-2">
-                <button onclick="switchTab('buyer')" id="navBuyer" class="px-3 py-1 bg-white text-blue-600 rounded-md font-semibold text-sm transition">Người Mua</button>
-                <button onclick="switchTab('seller')" id="navSeller" class="px-3 py-1 bg-blue-700 text-white rounded-md font-semibold text-sm transition hover:bg-blue-800">Người Bán</button>
+                <button onclick="switchTab('buyer')" id="navBuyer" class="px-3 py-1 bg-white text-blue-600 rounded-md font-semibold text-sm transition shadow">Người Mua</button>
+                <button onclick="switchTab('seller')" id="navSeller" class="px-3 py-1 bg-blue-700 text-white rounded-md font-semibold text-sm transition hover:bg-blue-800 shadow">Người Bán</button>
             </div>
         </div>
     </nav>
@@ -56,21 +59,18 @@
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
                 <h2 class="text-xl font-bold text-gray-800">Thông tin người đặt</h2>
                 <div class="space-y-3">
-                    <input type="text" id="customerName" placeholder="Họ và tên người đặt" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
-                    <button onclick="placeOrder()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg shadow transition">XÁC NHẬN ĐẶT HÀNG</button>
+                    <input type="text" id="customerName" placeholder="Họ và tên người đặt" class="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none">
+                    <button onclick="placeOrder()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg shadow transition text-lg">XÁC NHẬN ĐẶT HÀNG</button>
                 </div>
 
                 <div id="buyerPaymentInfo" class="hidden bg-blue-50 p-4 rounded-lg border border-blue-100 text-center mt-4 space-y-3">
                      <p class="font-semibold text-blue-800">Thông tin thanh toán:</p>
-                     
                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <!-- Momo QR -->
                           <div id="momoContainer" class="hidden bg-white p-3 rounded-lg border shadow-sm flex flex-col items-center">
                               <img id="buyerMomoImg" src="" class="h-36 object-contain rounded mb-2 border p-1">
                               <span class="inline-block bg-pink-100 text-pink-700 text-xs font-bold px-2.5 py-1 rounded-full mb-1">💜 Ví MoMo</span>
                               <div id="buyerMomoInfo" class="text-xs text-gray-600 whitespace-pre-wrap"></div>
                           </div>
-                          <!-- ZaloPay QR -->
                           <div id="zaloContainer" class="hidden bg-white p-3 rounded-lg border shadow-sm flex flex-col items-center">
                               <img id="buyerZaloImg" src="" class="h-36 object-contain rounded mb-2 border p-1">
                               <span class="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full mb-1">💙 ZaloPay</span>
@@ -85,7 +85,7 @@
         <div id="sellerView" class="hidden space-y-6">
             <div class="flex justify-between items-center border-b pb-2">
                 <div class="flex space-x-2">
-                    <button onclick="switchAdminTab('orders')" id="tabOrders" class="px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold">Đơn hàng</button>
+                    <button onclick="switchAdminTab('orders')" id="tabOrders" class="px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold transition">Đơn hàng</button>
                     <button onclick="switchAdminTab('products')" id="tabProducts" class="px-4 py-2 text-gray-500 font-semibold hover:text-blue-600 transition">Sản phẩm</button>
                     <button onclick="switchAdminTab('settings')" id="tabSettings" class="px-4 py-2 text-gray-500 font-semibold hover:text-blue-600 transition">Cài đặt</button>
                 </div>
@@ -95,30 +95,39 @@
             <!-- Tab: Quản lý Đơn hàng -->
             <div id="adminOrders" class="space-y-4">
                 <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl shadow-sm space-y-3">
+                    <!-- Khu vực lọc ngày và hiển thị trạng thái -->
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                         <div class="flex items-center space-x-2 w-full md:w-auto">
-                            <label class="font-semibold text-sm text-indigo-900 whitespace-nowrap">📅 Lọc theo ngày:</label>
-                            <input type="date" id="filterDate" onchange="filterOrdersByDate()" class="p-2 border rounded-md bg-white text-sm outline-none flex-grow">
-                            <button onclick="clearDateFilter()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm font-semibold transition">Xem tất cả</button>
+                            <label class="font-semibold text-sm text-indigo-900 whitespace-nowrap">📅 Lọc ngày:</label>
+                            <input type="date" id="filterDate" onchange="filterOrdersByDate()" class="p-1.5 border rounded-md bg-white text-sm outline-none flex-grow">
+                            <button onclick="clearDateFilter()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md text-sm font-semibold transition">Bỏ lọc</button>
                         </div>
-                        <div class="text-sm text-indigo-900 font-bold" id="filterStatusText">Hiển thị toàn bộ đơn hàng</div>
+                        <div class="text-sm text-indigo-900 font-bold bg-white px-3 py-1 rounded-md border" id="filterStatusText">Đơn chờ xử lý</div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm pt-2 border-t border-indigo-100">
+                    <!-- Thanh phân loại đơn hàng (Lịch sử) -->
+                    <div class="flex space-x-2 border-t border-indigo-100 pt-3 mt-3 overflow-x-auto hide-scrollbar">
+                        <button onclick="setOrderFilter('pending')" id="btnFilterPending" class="px-4 py-1.5 bg-blue-600 text-white text-sm font-bold rounded-lg whitespace-nowrap transition shadow-sm border border-transparent">Chờ xử lý</button>
+                        <button onclick="setOrderFilter('completed')" id="btnFilterCompleted" class="px-4 py-1.5 bg-white text-gray-600 text-sm font-bold rounded-lg whitespace-nowrap hover:bg-gray-50 transition border border-gray-200">Đã hoàn thành</button>
+                        <button onclick="setOrderFilter('deleted')" id="btnFilterDeleted" class="px-4 py-1.5 bg-white text-gray-600 text-sm font-bold rounded-lg whitespace-nowrap hover:bg-gray-50 transition border border-gray-200">Đã xóa (Thùng rác)</button>
+                        <button onclick="setOrderFilter('all')" id="btnFilterAll" class="px-4 py-1.5 bg-white text-gray-600 text-sm font-bold rounded-lg whitespace-nowrap hover:bg-gray-50 transition border border-gray-200">Tất cả</button>
+                    </div>
+
+                    <!-- Khu vực tóm tắt số liệu (Chỉ tính những đơn đang hiển thị) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm pt-3 mt-3 border-t border-indigo-100">
                         <div class="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm">
-                            <span class="font-semibold text-gray-600 block mb-1">Tổng số lượng theo từng loại:</span>
+                            <span class="font-semibold text-gray-600 block mb-1">Thống kê sản phẩm đang hiển thị:</span>
                             <div id="summaryProductCounts" class="space-y-1 text-indigo-900 font-medium">Đang tính toán...</div>
                         </div>
                         <div class="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm flex flex-col justify-between">
-                            <span class="font-semibold text-gray-600 block mb-1">Tổng số lượng đơn hàng:</span>
+                            <span class="font-semibold text-gray-600 block mb-1">Tổng số lượng đơn hiển thị:</span>
                             <div class="text-2xl font-extrabold text-blue-600" id="summaryTotalOrders">0 đơn hàng</div>
                         </div>
                     </div>
                 </div>
 
-                <h2 class="text-xl font-bold text-gray-800">Danh sách Đơn hàng</h2>
                 <div id="orderList" class="space-y-4">
-                    <div class="text-center text-gray-500 py-8">Chưa có đơn hàng nào.</div>
+                    <div class="text-center text-gray-500 py-8"><div class="loader mx-auto mb-2"></div> Đang tải dữ liệu...</div>
                 </div>
             </div>
 
@@ -132,11 +141,11 @@
                         <input type="number" id="newProductPrice" placeholder="Giá bán (VNĐ)..." class="w-full p-2 border rounded-md outline-none">
                         <div>
                             <label class="block text-sm text-gray-600 mb-1">Hình ảnh sản phẩm (Tỷ lệ chuẩn 4:3):</label>
-                            <input type="file" id="newProductImage" accept="image/*" onchange="handleImageSelection(event, 'product')" class="w-full p-2 border rounded-md outline-none text-sm">
+                            <input type="file" id="newProductImage" accept="image/*" onchange="handleImageSelection(event, 'product')" class="w-full p-2 border rounded-md outline-none text-sm bg-gray-50">
                         </div>
                         <div class="flex space-x-2">
-                            <button id="saveProductBtn" onclick="saveProduct()" class="bg-blue-600 text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 flex-1 transition">Thêm Sản Phẩm</button>
-                            <button id="cancelEditBtn" onclick="resetProductForm()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold hover:bg-gray-400 hidden transition">Hủy</button>
+                            <button id="saveProductBtn" onclick="saveProduct()" class="bg-blue-600 text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 flex-1 transition shadow-sm">Thêm Sản Phẩm</button>
+                            <button id="cancelEditBtn" onclick="resetProductForm()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md font-bold hover:bg-gray-400 hidden transition shadow-sm">Hủy</button>
                         </div>
                     </div>
                 </div>
@@ -152,13 +161,13 @@
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                     <h3 class="font-bold text-lg mb-3">Logo / Icon Cửa hàng</h3>
                     <div class="flex items-center space-x-4">
-                        <div class="w-16 h-16 rounded-full bg-gray-100 border p-1 overflow-hidden flex items-center justify-center flex-shrink-0">
+                        <div class="w-16 h-16 rounded-full bg-gray-100 border p-1 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
                             <img id="adminLogoPreview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23fbcfe8'/><text x='50%' y='55%' font-size='50' dominant-baseline='middle' text-anchor='middle'>🐾</text></svg>" class="w-full h-full object-cover">
                         </div>
                         <div class="flex-grow space-y-2">
                             <label class="block text-xs text-gray-600">Tải lên hình ảnh logo mới (Tỷ lệ 1:1 vuông):</label>
-                            <input type="file" id="logoInput" accept="image/*" onchange="handleLogoSelect(event)" class="w-full p-1 border rounded bg-white text-xs">
-                            <button onclick="saveLogoSettings()" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-blue-700 transition">Lưu Logo Mới</button>
+                            <input type="file" id="logoInput" accept="image/*" onchange="handleLogoSelect(event)" class="w-full p-1 border rounded bg-gray-50 text-xs">
+                            <button onclick="saveLogoSettings()" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-blue-700 transition shadow-sm">Lưu Logo Mới</button>
                         </div>
                     </div>
                 </div>
@@ -171,7 +180,7 @@
                             <div>
                                 <label class="block text-xs text-gray-600 mb-1">Mã QR MoMo:</label>
                                 <input type="file" id="momoQrInput" accept="image/*" class="w-full p-1 border rounded bg-white text-xs">
-                                <img id="momoPreview" src="" class="mt-2 h-24 object-contain hidden border rounded p-1 bg-white">
+                                <img id="momoPreview" src="" class="mt-2 h-24 object-contain hidden border rounded p-1 bg-white shadow-sm">
                             </div>
                             <div>
                                 <label class="block text-xs text-gray-600 mb-1">Thông tin MoMo (SĐT, Tên):</label>
@@ -184,7 +193,7 @@
                             <div>
                                 <label class="block text-xs text-gray-600 mb-1">Mã QR ZaloPay:</label>
                                 <input type="file" id="zaloQrInput" accept="image/*" class="w-full p-1 border rounded bg-white text-xs">
-                                <img id="zaloPreview" src="" class="mt-2 h-24 object-contain hidden border rounded p-1 bg-white">
+                                <img id="zaloPreview" src="" class="mt-2 h-24 object-contain hidden border rounded p-1 bg-white shadow-sm">
                             </div>
                             <div>
                                 <label class="block text-xs text-gray-600 mb-1">Thông tin ZaloPay (SĐT, Tên):</label>
@@ -192,16 +201,16 @@
                             </div>
                         </div>
                     </div>
-                    <button onclick="savePaymentSettings()" class="bg-green-600 text-white px-4 py-2 rounded-md font-bold hover:bg-green-700 w-full mt-4 transition">Lưu Cấu Hình Thanh Toán</button>
+                    <button onclick="savePaymentSettings()" class="bg-green-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-green-700 w-full mt-4 transition shadow">Lưu Cấu Hình Thanh Toán</button>
                 </div>
 
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                     <h3 class="font-bold text-lg mb-3">Đổi mật khẩu Quản trị</h3>
                     <div class="space-y-3">
-                        <input type="password" id="oldPwd" placeholder="Mật khẩu hiện tại..." class="w-full p-2 border rounded-md outline-none">
-                        <input type="password" id="newPwd" placeholder="Mật khẩu mới..." class="w-full p-2 border rounded-md outline-none">
-                        <input type="password" id="confirmNewPwd" placeholder="Xác nhận mật khẩu mới..." class="w-full p-2 border rounded-md outline-none">
-                        <button onclick="changePassword()" class="bg-blue-600 text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 w-full transition">Đổi Mật Khẩu</button>
+                        <input type="password" id="oldPwd" placeholder="Mật khẩu hiện tại..." class="w-full p-2 border rounded-md outline-none bg-gray-50">
+                        <input type="password" id="newPwd" placeholder="Mật khẩu mới..." class="w-full p-2 border rounded-md outline-none bg-gray-50">
+                        <input type="password" id="confirmNewPwd" placeholder="Xác nhận mật khẩu mới..." class="w-full p-2 border rounded-md outline-none bg-gray-50">
+                        <button onclick="changePassword()" class="bg-gray-800 text-white px-4 py-2 rounded-md font-bold hover:bg-gray-900 w-full transition shadow-sm">Đổi Mật Khẩu</button>
                     </div>
                 </div>
             </div>
@@ -209,7 +218,7 @@
 
     </div>
 
-    <!-- Modal Căn chỉnh Ảnh (Image Cropper / Positioner) -->
+    <!-- Modal Căn chỉnh Ảnh -->
     <div id="cropModal" class="fixed inset-0 bg-black bg-opacity-70 hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-5 space-y-4">
             <h3 id="cropTitle" class="text-lg font-bold text-gray-900">Căn chỉnh khung hình</h3>
@@ -226,33 +235,47 @@
             </div>
 
             <div class="flex space-x-2 pt-2">
-                <button onclick="closeCropModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-semibold text-sm">Hủy</button>
-                <button onclick="confirmCropImage()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold text-sm">Xác nhận cắt ảnh</button>
+                <button onclick="closeCropModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-semibold text-sm transition">Hủy</button>
+                <button onclick="confirmCropImage()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold text-sm transition shadow-sm">Xác nhận cắt ảnh</button>
             </div>
         </div>
     </div>
 
     <!-- Modal Thông báo -->
-    <div id="customModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
+    <div id="customModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden transform transition-all">
             <div class="p-6 text-center">
                 <h3 id="modalTitle" class="text-lg font-bold text-gray-900 mb-2">Thông báo</h3>
                 <div id="modalBody" class="text-gray-600 mb-6 text-sm"></div>
-                <button onclick="closeModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 w-full">Đóng</button>
+                <button onclick="closeModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 w-full transition shadow-sm">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xác nhận (Có nút Cancel) -->
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div class="p-6 text-center">
+                <h3 id="confirmTitle" class="text-lg font-bold text-gray-900 mb-2">Xác nhận</h3>
+                <div id="confirmBody" class="text-gray-600 mb-6 text-sm"></div>
+                <div class="flex space-x-3">
+                    <button onclick="closeConfirmModal()" class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Hủy</button>
+                    <button id="confirmOkBtn" class="flex-1 bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition shadow-sm">Đồng ý</button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Modal Nhập mật khẩu Admin -->
     <div id="pwdModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm">
             <div class="p-6">
                 <h3 class="text-lg font-bold text-gray-900 mb-2">Khu vực Quản lý</h3>
                 <p class="text-sm text-gray-500 mb-4">Vui lòng nhập mật khẩu để truy cập.</p>
                 <input type="password" id="adminPwdInput" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none mb-4" placeholder="Nhập mật khẩu...">
                 <div class="flex space-x-2">
-                    <button onclick="cancelPwd()" class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300">Hủy</button>
-                    <button onclick="checkPwd()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700">Xác nhận</button>
+                    <button onclick="cancelPwd()" class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Hủy</button>
+                    <button onclick="checkPwd()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm">Xác nhận</button>
                 </div>
             </div>
         </div>
@@ -277,9 +300,12 @@
         let storeLogo = "";
         let currentAdminPassword = "123"; 
         let isAdminUnlocked = false;
+        
         let rawOrdersData = {};
+        let currentOrderFilter = 'pending'; // Mặc định hiển thị đơn Chờ xử lý
+
         let finalCroppedBase64 = "";
-        let tempLogoBase64 = ""; // Lưu chuỗi Base64 riêng biệt cho Logo
+        let tempLogoBase64 = ""; 
         let currentCropType = "product"; 
 
         let cropImgObj = new Image();
@@ -290,13 +316,21 @@
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
 
-            // Lắng nghe dữ liệu Logo từ Firebase
+            // Khôi phục Logo từ LocalStorage
+            const localSavedLogo = localStorage.getItem('store_logo_backup');
+            if (localSavedLogo) {
+                storeLogo = localSavedLogo;
+                document.getElementById('storeLogoImg').src = storeLogo;
+                document.getElementById('adminLogoPreview').src = storeLogo;
+            }
+
             db.ref('settings/logo').on('value', (snapshot) => {
                 if(snapshot.exists()) {
                     storeLogo = snapshot.val();
                     if(storeLogo) {
                         document.getElementById('storeLogoImg').src = storeLogo;
                         document.getElementById('adminLogoPreview').src = storeLogo;
+                        localStorage.setItem('store_logo_backup', storeLogo);
                     }
                 }
             });
@@ -330,334 +364,87 @@
                 renderProductsForAdmin();
             });
 
+            // Lắng nghe thay đổi toàn bộ Đơn hàng và tự động áp dụng bộ lọc hiện tại
             db.ref('orders').on('value', (snapshot) => {
                 rawOrdersData = snapshot.val() || {};
-                renderOrderListFromData(rawOrdersData);
+                applyOrderFilters();
             });
 
             setupCropperEvents();
         }
 
-        // Chọn file Logo trực tiếp
-        function handleLogoSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            fileToBase64(file, (base64) => {
-                tempLogoBase64 = base64;
-                document.getElementById('adminLogoPreview').src = base64;
-            });
-        }
-
-        function setupCropperEvents() {
-            const vp = document.getElementById('cropViewport');
-
-            vp.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                startX = e.clientX - imgX;
-                startY = e.clientY - imgY;
-            });
-            window.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                imgX = e.clientX - startX;
-                imgY = e.clientY - startY;
-                updateCropImageTransform();
-            });
-            window.addEventListener('mouseup', () => { isDragging = false; });
-
-            vp.addEventListener('touchstart', (e) => {
-                isDragging = true;
-                startX = e.touches[0].clientX - imgX;
-                startY = e.touches[0].clientY - imgY;
-            });
-            window.addEventListener('touchmove', (e) => {
-                if (!isDragging) return;
-                imgX = e.touches[0].clientX - startX;
-                imgY = e.touches[0].clientY - startY;
-                updateCropImageTransform();
-            });
-            window.addEventListener('touchend', () => { isDragging = false; });
-        }
-
-        function handleImageSelection(event, type = 'product') {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            currentCropType = type;
-            const vp = document.getElementById('cropViewport');
-            if (type === 'logo') {
-                vp.className = "relative w-full aspect-square bg-gray-100 overflow-hidden rounded-full border shadow-inner cursor-grab select-none flex items-center justify-center max-w-[250px] mx-auto";
-                document.getElementById('cropTitle').innerText = "Căn chỉnh Logo (Hình tròn 1:1)";
-            } else {
-                vp.className = "relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-lg border shadow-inner cursor-grab select-none flex items-center justify-center";
-                document.getElementById('cropTitle').innerText = "Căn chỉnh Sản phẩm (Tỷ lệ 4:3)";
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                cropImgObj.src = e.target.result;
-                cropImgObj.onload = function() {
-                    document.getElementById('cropModal').classList.remove('hidden');
-
-                    const vpWidth = vp.clientWidth;
-                    const vpHeight = vp.clientHeight;
-
-                    let scaleX = vpWidth / cropImgObj.width;
-                    let scaleY = vpHeight / cropImgObj.height;
-                    imgScale = Math.max(scaleX, scaleY);
-
-                    document.getElementById('zoomRange').min = imgScale * 0.2;
-                    document.getElementById('zoomRange').max = imgScale * 5;
-                    document.getElementById('zoomRange').value = imgScale;
-
-                    imgX = (vpWidth - cropImgObj.width * imgScale) / 2;
-                    imgY = (vpHeight - cropImgObj.height * imgScale) / 2;
-
-                    const cropImgEl = document.getElementById('cropImage');
-                    cropImgEl.src = cropImgObj.src;
-                    updateCropImageTransform();
-                };
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function updateCropImageTransform() {
-            const cropImgEl = document.getElementById('cropImage');
-            cropImgEl.style.width = (cropImgObj.width * imgScale) + 'px';
-            cropImgEl.style.height = (cropImgObj.height * imgScale) + 'px';
-            cropImgEl.style.transform = `translate(${imgX}px, ${imgY}px)`;
-        }
-
-        function onZoomChange(val) {
-            const vp = document.getElementById('cropViewport');
-            let oldScale = imgScale;
-            imgScale = parseFloat(val);
-
-            let centerX = vp.clientWidth / 2;
-            let centerY = vp.clientHeight / 2;
-
-            imgX = centerX - (centerX - imgX) * (imgScale / oldScale);
-            imgY = centerY - (centerY - imgY) * (imgScale / oldScale);
-
-            updateCropImageTransform();
-        }
-
-        function closeCropModal() {
-            document.getElementById('cropModal').classList.add('hidden');
-            if (currentCropType === 'logo') document.getElementById('logoInput').value = '';
-            else document.getElementById('newProductImage').value = '';
-        }
-
-        function confirmCropImage() {
-            const vp = document.getElementById('cropViewport');
-            const targetW = currentCropType === 'logo' ? 300 : 600;
-            const targetH = currentCropType === 'logo' ? 300 : 450;
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = targetW;
-            canvas.height = targetH;
-            const ctx = canvas.getContext('2d');
-
-            let renderScale = targetW / vp.clientWidth;
-
-            ctx.fillStyle = "#FFFFFF";
-            ctx.fillRect(0, 0, targetW, targetH);
-
-            ctx.drawImage(
-                cropImgObj,
-                imgX * renderScale,
-                imgY * renderScale,
-                cropImgObj.width * imgScale * renderScale,
-                cropImgObj.height * imgScale * renderScale
-            );
-
-            let resBase64 = canvas.toDataURL('image/jpeg', 0.85);
-            document.getElementById('cropModal').classList.add('hidden');
-            
-            if (currentCropType === 'logo') {
-                tempLogoBase64 = resBase64;
-                document.getElementById('adminLogoPreview').src = tempLogoBase64;
-                showModal('Đã chọn Logo', 'Bấm nút "Lưu Logo Mới" để hoàn tất cập nhật.');
-            } else {
-                finalCroppedBase64 = resBase64;
-                showModal('Đã cắt ảnh', 'Ảnh sản phẩm đã được căn chỉnh thành công và sẵn sàng lưu.');
-            }
-        }
-
-        // Hàm lưu cấu hình Logo lên Firebase
-        function saveLogoSettings() {
-            if (!tempLogoBase64) {
-                return showModal('Thông báo', 'Vui lòng chọn hoặc tải lên tệp logo mới trước khi lưu.');
-            }
-            db.ref('settings/logo').set(tempLogoBase64).then(() => {
-                document.getElementById('storeLogoImg').src = tempLogoBase64;
-                document.getElementById('adminLogoPreview').src = tempLogoBase64;
-                showModal('Thành công', 'Đã cập nhật Logo cửa hàng mới!');
-            }).catch(err => {
-                showModal('Lỗi', 'Không thể cập nhật logo: ' + err.message);
-            });
-        }
-
-        function renderPaymentInfoForBuyer() {
-            const container = document.getElementById('buyerPaymentInfo');
-            const momoContainer = document.getElementById('momoContainer');
-            const zaloContainer = document.getElementById('zaloContainer');
-
-            const momoImg = document.getElementById('buyerMomoImg');
-            const momoInfo = document.getElementById('buyerMomoInfo');
-            
-            const zaloImg = document.getElementById('buyerZaloImg');
-            const zaloInfo = document.getElementById('buyerZaloInfo');
-
-            let hasMomo = paymentSettings.momoQr || paymentSettings.momoInfo;
-            let hasZalo = paymentSettings.zaloQr || paymentSettings.zaloInfo;
-
-            if (hasMomo || hasZalo) {
-                container.classList.remove('hidden');
-
-                if (hasMomo) {
-                    momoContainer.classList.remove('hidden');
-                    if (paymentSettings.momoQr) {
-                        momoImg.src = paymentSettings.momoQr;
-                        momoImg.classList.remove('hidden');
+        // --- CÁC HÀM XỬ LÝ LỌC & HIỂN THỊ ĐƠN HÀNG ---
+        function setOrderFilter(filter) {
+            currentOrderFilter = filter;
+            // Thay đổi giao diện các nút lọc
+            ['pending', 'completed', 'deleted', 'all'].forEach(f => {
+                const btn = document.getElementById('btnFilter' + f.charAt(0).toUpperCase() + f.slice(1));
+                if(btn) {
+                    if(f === filter) {
+                        btn.className = "px-4 py-1.5 bg-blue-600 text-white text-sm font-bold rounded-lg whitespace-nowrap transition shadow-sm border border-transparent";
                     } else {
-                        momoImg.classList.add('hidden');
+                        btn.className = "px-4 py-1.5 bg-white text-gray-600 text-sm font-bold rounded-lg whitespace-nowrap hover:bg-gray-50 transition border border-gray-200 shadow-sm";
                     }
-                    momoInfo.innerText = paymentSettings.momoInfo || "";
-                } else {
-                    momoContainer.classList.add('hidden');
                 }
-
-                if (hasZalo) {
-                    zaloContainer.classList.remove('hidden');
-                    if (paymentSettings.zaloQr) {
-                        zaloImg.src = paymentSettings.zaloQr;
-                        zaloImg.classList.remove('hidden');
-                    } else {
-                        zaloImg.classList.add('hidden');
-                    }
-                    zaloInfo.innerText = paymentSettings.zaloInfo || "";
-                } else {
-                    zaloContainer.classList.add('hidden');
-                }
-
-            } else {
-                container.classList.add('hidden');
-            }
-        }
-
-        function renderProductsForBuyer() {
-            const list = document.getElementById('buyerProductList');
-            list.innerHTML = '';
-            if(Object.keys(products).length === 0) {
-                list.innerHTML = '<div class="col-span-full text-center text-gray-500 py-4">Chưa có sản phẩm nào.</div>';
-                return;
-            }
-            for(let id in products) {
-                const p = products[id];
-                const qty = cart[id] ? cart[id].qty : 0;
-                list.innerHTML += `
-                    <div class="border rounded-lg overflow-hidden flex flex-col shadow-sm bg-white">
-                        <div class="w-full aspect-[4/3] bg-gray-100 overflow-hidden">
-                            <img src="${p.image || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
-                        </div>
-                        <div class="p-3 flex flex-col flex-grow">
-                            <div class="font-semibold text-gray-800 text-sm mb-1 flex-grow">${p.name}</div>
-                            <div class="text-red-600 font-bold text-sm mb-3">${formatPrice(p.price)}</div>
-                            ${qty === 0 
-                                ? `<button onclick="changeQty('${id}', 1)" class="w-full bg-blue-50 text-blue-600 border border-blue-200 py-1.5 rounded text-sm font-bold">Thêm</button>`
-                                : `<div class="flex items-center justify-between bg-blue-50 rounded border border-blue-200 p-1">
-                                    <button onclick="changeQty('${id}', -1)" class="w-8 h-6 bg-white text-blue-600 font-bold">-</button>
-                                    <span class="font-bold text-blue-800">${qty}</span>
-                                    <button onclick="changeQty('${id}', 1)" class="w-8 h-6 bg-white text-blue-600 font-bold">+</button>
-                                   </div>`
-                            }
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        function changeQty(id, delta) {
-            if (!cart[id] && delta > 0) {
-                cart[id] = { qty: 1, name: products[id].name, price: products[id].price, image: products[id].image }; 
-            } else if (cart[id]) {
-                cart[id].qty += delta;
-                if (cart[id].qty <= 0) delete cart[id];
-            }
-            renderProductsForBuyer();
-            renderCart();
-        }
-
-        function renderCart() {
-            const container = document.getElementById('cartContainer');
-            const totalEl = document.getElementById('cartTotal');
-            container.innerHTML = '';
-            let total = 0;
-            for (let id in cart) {
-                const item = cart[id];
-                const itemTotal = item.price * item.qty;
-                total += itemTotal;
-                container.innerHTML += `
-                    <div class="flex justify-between items-center border-b pb-2">
-                        <div><div class="font-semibold">${item.name}</div><div class="text-gray-500 text-xs">${formatPrice(item.price)} x ${item.qty}</div></div>
-                        <div class="font-bold">${formatPrice(itemTotal)}</div>
-                    </div>
-                `;
-            }
-            if(Object.keys(cart).length === 0) container.innerHTML = 'Chưa có sản phẩm nào.';
-            totalEl.innerText = formatPrice(total);
-        }
-
-        function placeOrder() {
-            if (Object.keys(cart).length === 0) return showModal('Giỏ hàng trống', 'Vui lòng chọn ít nhất 1 sản phẩm.');
-            const name = document.getElementById('customerName').value.trim();
-            if (!name) return showModal('Thiếu thông tin', 'Vui lòng nhập tên người đặt.');
-
-            db.ref('orders').push({
-                customer: { name },
-                items: cart,
-                timestamp: Date.now(),
-                status: 'pending'
-            }).then(() => {
-                showModal('Đặt hàng thành công!', 'Đơn hàng đã được gửi đến người bán.');
-                cart = {};
-                document.getElementById('customerName').value = '';
-                renderProductsForBuyer();
-                renderCart();
             });
+            applyOrderFilters();
         }
 
         function filterOrdersByDate() {
-            const selectedDateVal = document.getElementById('filterDate').value;
-            if (!selectedDateVal) {
-                renderOrderListFromData(rawOrdersData);
-                return;
-            }
-
-            let filtered = {};
-            for (let key in rawOrdersData) {
-                let order = rawOrdersData[key];
-                if (order.timestamp) {
-                    let d = new Date(order.timestamp);
-                    let year = d.getFullYear();
-                    let month = String(d.getMonth() + 1).padStart(2, '0');
-                    let day = String(d.getDate()).padStart(2, '0');
-                    let orderDateStr = `${year}-${month}-${day}`;
-
-                    if (orderDateStr === selectedDateVal) {
-                        filtered[key] = order;
-                    }
-                }
-            }
-            document.getElementById('filterStatusText').innerText = `Đang lọc ngày: ${selectedDateVal.split('-').reverse().join('/')}`;
-            renderOrderListFromData(filtered);
+            applyOrderFilters();
         }
 
         function clearDateFilter() {
             document.getElementById('filterDate').value = '';
-            document.getElementById('filterStatusText').innerText = 'Hiển thị toàn bộ đơn hàng';
-            renderOrderListFromData(rawOrdersData);
+            applyOrderFilters();
+        }
+
+        function applyOrderFilters() {
+            const selectedDateVal = document.getElementById('filterDate').value;
+            let filtered = {};
+            
+            for (let key in rawOrdersData) {
+                let order = rawOrdersData[key];
+                let matchDate = true;
+                let matchStatus = true;
+                
+                // Mặc định đơn chưa có status được coi là pending
+                let st = order.status || 'pending';
+
+                // Kiểm tra Ngày
+                if (selectedDateVal && order.timestamp) {
+                    let d = new Date(order.timestamp);
+                    let year = d.getFullYear();
+                    let month = String(d.getMonth() + 1).padStart(2, '0');
+                    let day = String(d.getDate()).padStart(2, '0');
+                    if (`${year}-${month}-${day}` !== selectedDateVal) matchDate = false;
+                }
+
+                // Kiểm tra Trạng thái
+                if (currentOrderFilter !== 'all') {
+                    if (st !== currentOrderFilter) matchStatus = false;
+                } else {
+                    // Nếu chọn 'Tất cả', ẩn các đơn trong 'Thùng rác' để tránh rối mắt
+                    if (st === 'deleted') matchStatus = false; 
+                }
+
+                if (matchDate && matchStatus) {
+                    filtered[key] = order;
+                }
+            }
+            
+            // Cập nhật câu text hiển thị trạng thái lọc
+            let statusText = "Tất cả đơn (Trừ Đã xóa)";
+            if(currentOrderFilter === 'pending') statusText = "Danh sách: Đơn chờ xử lý";
+            if(currentOrderFilter === 'completed') statusText = "Lịch sử: Đơn đã hoàn thành";
+            if(currentOrderFilter === 'deleted') statusText = "Thùng rác: Đơn đã xóa";
+
+            if (selectedDateVal) {
+                statusText += ` | Ngày: ${selectedDateVal.split('-').reverse().join('/')}`;
+            }
+            document.getElementById('filterStatusText').innerText = statusText;
+
+            renderOrderListFromData(filtered);
         }
 
         function renderOrderListFromData(dataObject) {
@@ -674,6 +461,7 @@
 
             sortedKeys.forEach(key => {
                 const data = dataObject[key];
+                const status = data.status || 'pending';
                 let itemsHtml = '';
                 let orderTotal = 0;
                 
@@ -681,7 +469,7 @@
                     const item = data.items[itemKey];
                     itemsHtml += `
                         <div class="flex items-center space-x-3 mb-2">
-                            <img src="${item.image || ''}" class="w-10 h-10 object-cover rounded border">
+                            <img src="${item.image || ''}" class="w-10 h-10 object-cover rounded border bg-white">
                             <div>
                                 <span class="text-sm font-medium text-gray-700">${item.name}</span>
                                 <span class="text-sm text-gray-500 block">x${item.qty}</span>
@@ -694,267 +482,232 @@
                     productTotals[item.name] += item.qty;
                 }
 
-                if(data.status === 'completed') totalRevenue += orderTotal;
+                // Cộng doanh thu cho những đơn đang hiển thị trên màn hình hiện tại
+                totalRevenue += orderTotal;
 
-                const isCompleted = data.status === 'completed';
                 const customerName = data.customer && data.customer.name ? data.customer.name : "Khách vãng lai";
-                
                 let dateStr = "";
                 if (data.timestamp) {
                     let d = new Date(data.timestamp);
                     dateStr = d.toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
                 }
 
+                // --- Giao diện tùy theo trạng thái (Màu nền & Badge) ---
+                let bgClass = 'bg-white border-gray-200';
+                if(status === 'completed') bgClass = 'bg-green-50/50 border-green-200 opacity-95';
+                if(status === 'deleted') bgClass = 'bg-gray-100 border-gray-300 opacity-70 grayscale-[30%]'; // Làm mờ nhẹ thùng rác
+
+                let statusBadge = '';
+                if(status === 'pending') statusBadge = '<span class="text-[10px] uppercase tracking-wider text-yellow-700 bg-yellow-100 px-2.5 py-1 rounded-full font-bold">Chờ xử lý</span>';
+                if(status === 'completed') statusBadge = '<span class="text-[10px] uppercase tracking-wider text-green-700 bg-green-200 px-2.5 py-1 rounded-full font-bold">Hoàn thành</span>';
+                if(status === 'deleted') statusBadge = '<span class="text-[10px] uppercase tracking-wider text-gray-600 bg-gray-300 px-2.5 py-1 rounded-full font-bold shadow-inner">Đã xóa</span>';
+
+                // --- Nút thao tác (Action Buttons) ---
+                let actionButtons = '';
+                if (status === 'pending') {
+                    actionButtons = `
+                        <button onclick="updateOrderStatus('${key}', 'completed')" class="flex-1 bg-green-500 text-white py-2 rounded-lg text-sm font-bold hover:bg-green-600 transition shadow-sm">Xong (Hoàn thành)</button>
+                        <button onclick="softDeleteOrder('${key}')" class="flex-1 bg-red-500 text-white py-2 rounded-lg text-sm font-bold hover:bg-red-600 transition shadow-sm">Xóa đơn</button>
+                    `;
+                } else if (status === 'completed') {
+                    actionButtons = `
+                        <button onclick="updateOrderStatus('${key}', 'pending')" class="flex-1 bg-yellow-500 text-white py-2 rounded-lg text-sm font-bold hover:bg-yellow-600 transition shadow-sm">Hoàn tác (Chờ xử lý)</button>
+                        <button onclick="softDeleteOrder('${key}')" class="flex-1 bg-red-500 text-white py-2 rounded-lg text-sm font-bold hover:bg-red-600 transition shadow-sm">Xóa đơn</button>
+                    `;
+                } else if (status === 'deleted') {
+                    actionButtons = `
+                        <button onclick="updateOrderStatus('${key}', 'pending')" class="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-600 transition shadow-sm">Khôi phục</button>
+                        <button onclick="hardDeleteOrder('${key}')" class="flex-1 bg-gray-800 text-white py-2 rounded-lg text-sm font-bold hover:bg-gray-900 transition shadow-sm">Xóa vĩnh viễn</button>
+                    `;
+                }
+
                 orderList.innerHTML += `
-                    <div class="p-4 rounded-xl border shadow-sm ${isCompleted ? 'bg-gray-100 opacity-70' : 'bg-white'}">
-                        <div class="mb-3 border-b pb-2 flex justify-between items-center">
-                            <div class="flex items-center space-x-2">
-                                <span class="text-sm text-gray-500 font-semibold">Người đặt:</span>
-                                <span class="text-base font-bold text-blue-600 bg-blue-50 px-3 py-0.5 rounded-full">${customerName}</span>
+                    <div class="p-4 rounded-xl border shadow-sm ${bgClass} relative">
+                        <div class="mb-3 border-b border-gray-200 pb-3 flex justify-between items-start">
+                            <div class="flex items-center space-x-2 mt-1">
+                                <span class="text-xs text-gray-500 font-semibold uppercase">Khách:</span>
+                                <span class="text-sm font-bold text-blue-700 bg-white px-2.5 py-1 rounded border shadow-sm">${customerName}</span>
                             </div>
-                            <div class="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded">🕒 ${dateStr}</div>
+                            <div class="flex flex-col items-end space-y-1.5">
+                                ${statusBadge}
+                                <div class="text-[11px] text-gray-500 font-medium">🕒 ${dateStr}</div>
+                            </div>
                         </div>
-                        <div class="border-l-2 pl-2 mb-3">${itemsHtml}</div>
-                        <div class="font-bold text-red-600 mb-3">Tổng: ${formatPrice(orderTotal)}</div>
+                        <div class="border-l-2 pl-3 mb-3 border-gray-300">${itemsHtml}</div>
+                        <div class="font-extrabold text-red-600 mb-3 text-right text-lg border-t pt-2">${formatPrice(orderTotal)}</div>
                         <div class="flex space-x-2">
-                            <button onclick="updateOrderStatus('${key}', '${isCompleted ? 'pending' : 'completed'}')" class="flex-1 ${isCompleted ? 'bg-yellow-500' : 'bg-green-500'} text-white py-1.5 rounded text-sm font-semibold">${isCompleted ? 'Hủy Xong' : 'Xong'}</button>
-                            <button onclick="deleteOrder('${key}')" class="flex-1 bg-red-500 text-white py-1.5 rounded text-sm font-semibold">Xóa</button>
+                            ${actionButtons}
                         </div>
                     </div>
                 `;
                 count++;
             });
 
+            // --- TỔNG KẾT PHẦN HIỂN THỊ ---
             summaryTotalOrdersEl.innerText = count + " đơn hàng";
 
             if (Object.keys(productTotals).length > 0) {
                 let countsHtml = "";
                 for (let prodName in productTotals) {
-                    countsHtml += `<div>• ${prodName}: <strong class="text-indigo-700">${productTotals[prodName]}</strong></div>`;
+                    countsHtml += `<div class="flex justify-between border-b border-dashed border-gray-200 py-1">
+                                    <span class="text-gray-700">• ${prodName}:</span>
+                                    <strong class="text-indigo-700">${productTotals[prodName]}</strong>
+                                   </div>`;
                 }
                 summaryCountsEl.innerHTML = countsHtml;
             } else {
-                summaryCountsEl.innerHTML = "Chưa có sản phẩm nào được đặt.";
+                summaryCountsEl.innerHTML = "<span class="text-gray-500 italic">Không có sản phẩm nào.</span>";
             }
 
             if (count === 0) {
-                orderList.innerHTML = '<div class="text-center text-gray-500 py-8">Không có đơn hàng nào trong ngày này.</div>';
+                orderList.innerHTML = '<div class="text-center text-gray-500 py-10 bg-white rounded-xl border border-dashed">Danh sách trống.</div>';
             } else {
-                orderList.innerHTML = `<div class="bg-green-100 text-green-800 p-3 rounded-lg font-bold text-center mb-4">Doanh thu đã xử lý: ${formatPrice(totalRevenue)}</div>` + orderList.innerHTML;
+                let summaryColor = currentOrderFilter === 'deleted' ? 'bg-gray-200 text-gray-700' : 'bg-green-100 text-green-800';
+                orderList.innerHTML = `<div class="${summaryColor} p-3.5 rounded-xl font-extrabold text-center mb-4 shadow-sm text-base">Tổng tiền danh sách này: ${formatPrice(totalRevenue)}</div>` + orderList.innerHTML;
             }
         }
 
-        function renderProductsForAdmin() {
-            const list = document.getElementById('adminProductList');
-            list.innerHTML = '';
-            for(let id in products) {
-                const p = products[id];
-                list.innerHTML += `
-                    <div class="border rounded-lg p-3 flex items-center bg-gray-50 shadow-sm">
-                        <img src="${p.image || ''}" class="w-12 h-12 rounded object-cover mr-3 border">
-                        <div class="flex-grow"><div class="font-bold text-sm">${p.name}</div><div class="text-red-600 text-sm">${formatPrice(p.price)}</div></div>
-                        <button onclick="editProduct('${id}')" class="text-blue-500 p-2 hover:bg-blue-100 rounded mr-1" title="Sửa">✏️</button>
-                        <button onclick="deleteProduct('${id}')" class="text-red-500 p-2 hover:bg-red-100 rounded" title="Xóa">🗑️</button>
-                    </div>
-                `;
-            }
-        }
-
-        function fileToBase64(file, callback) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                callback(e.target.result);
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function saveProduct() {
-            const editId = document.getElementById('editProductId').value;
-            const name = document.getElementById('newProductName').value.trim();
-            const price = parseInt(document.getElementById('newProductPrice').value);
-
-            if(!name || isNaN(price)) return showModal('Lỗi', 'Nhập đầy đủ tên và giá sản phẩm hợp lệ.');
-
-            let currentImg = editId && products[editId] ? products[editId].image : "";
-            let imageToSave = finalCroppedBase64 || currentImg;
-
-            const productData = { name, price, image: imageToSave };
-            if (editId) {
-                db.ref('products/' + editId).update(productData).then(() => {
-                    showModal('Thành công', 'Đã cập nhật thông tin sản phẩm.');
-                    resetProductForm();
-                });
-            } else {
-                db.ref('products').push(productData).then(() => {
-                    showModal('Thành công', 'Đã thêm sản phẩm mới.');
-                    resetProductForm();
-                });
-            }
-        }
-
-        function editProduct(id) {
-            const p = products[id];
-            if(!p) return;
-            document.getElementById('editProductId').value = id;
-            document.getElementById('newProductName').value = p.name;
-            document.getElementById('newProductPrice').value = p.price;
-            document.getElementById('productFormTitle').innerText = "Cập nhật sản phẩm";
-            document.getElementById('saveProductBtn').innerText = "Lưu Thay Đổi";
-            document.getElementById('cancelEditBtn').classList.remove('hidden');
-            finalCroppedBase64 = "";
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function resetProductForm() {
-            document.getElementById('editProductId').value = '';
-            document.getElementById('newProductName').value = '';
-            document.getElementById('newProductPrice').value = '';
-            document.getElementById('newProductImage').value = '';
-            document.getElementById('productFormTitle').innerText = "Thêm sản phẩm mới";
-            document.getElementById('saveProductBtn').innerText = "Thêm Sản Phẩm";
-            document.getElementById('cancelEditBtn').classList.add('hidden');
-            finalCroppedBase64 = "";
-        }
-
-        function deleteProduct(id) {
-            db.ref('products/' + id).remove();
-        }
-
-        function savePaymentSettings() {
-            const momoInfo = document.getElementById('momoInfoInput').value;
-            const zaloInfo = document.getElementById('zaloInfoInput').value;
-            const momoFile = document.getElementById('momoQrInput');
-            const zaloFile = document.getElementById('zaloQrInput');
-
-            let newSettings = {
-                momoQr: paymentSettings.momoQr || "",
-                momoInfo: momoInfo,
-                zaloQr: paymentSettings.zaloQr || "",
-                zaloInfo: zaloInfo
-            };
-
-            let processed = 0;
-            let totalToProcess = (momoFile.files.length > 0 ? 1 : 0) + (zaloFile.files.length > 0 ? 1 : 0);
-
-            if (totalToProcess === 0) {
-                db.ref('settings/payment').set(newSettings).then(() => showModal('Thành công', 'Đã lưu cấu hình thanh toán.'));
-                return;
-            }
-
-            if (momoFile.files.length > 0) {
-                fileToBase64(momoFile.files[0], (base64) => {
-                    newSettings.momoQr = base64;
-                    processed++;
-                    if (processed === totalToProcess) {
-                        db.ref('settings/payment').set(newSettings).then(() => showModal('Thành công', 'Đã lưu cấu hình thanh toán.'));
-                    }
-                });
-            }
-
-            if (zaloFile.files.length > 0) {
-                fileToBase64(zaloFile.files[0], (base64) => {
-                    newSettings.zaloQr = base64;
-                    processed++;
-                    if (processed === totalToProcess) {
-                        db.ref('settings/payment').set(newSettings).then(() => showModal('Thành công', 'Đã lưu cấu hình thanh toán.'));
-                    }
-                });
-            }
-        }
-
-        function changePassword() {
-            const oldP = document.getElementById('oldPwd').value;
-            const newP = document.getElementById('newPwd').value;
-            const confP = document.getElementById('confirmNewPwd').value;
-
-            if (!oldP || !newP || !confP) return showModal('Lỗi', 'Vui lòng nhập đầy đủ thông tin mật khẩu.');
-            if (newP !== confP) return showModal('Lỗi', 'Mật khẩu mới không khớp.');
-
-            db.ref('settings/adminAccount').once('value').then(snapshot => {
-                const acc = snapshot.val() || { email: "haiconheo1306@gmail.com", password: "123" };
-                if (oldP !== acc.password) return showModal('Lỗi', 'Mật khẩu hiện tại không đúng.');
-
-                db.ref('settings/adminAccount').set({ email: acc.email, password: newP }).then(() => {
-                    document.getElementById('oldPwd').value = '';
-                    document.getElementById('newPwd').value = '';
-                    document.getElementById('confirmNewPwd').value = '';
-                    showModal('Thành công', 'Đã đổi mật khẩu quản trị thành công!');
-                });
-            });
-        }
-
+        // --- CÁC HÀM CẬP NHẬT TRẠNG THÁI DB ---
         function updateOrderStatus(id, status) {
             db.ref('orders/' + id).update({ status: status });
         }
 
-        function deleteOrder(id) {
-            showModal('Xác nhận', 'Bạn có muốn xóa đơn hàng này?', () => db.ref('orders/' + id).remove());
-        }
-
-        function switchTab(tab) {
-            if (tab === 'seller') {
-                if (!isAdminUnlocked) {
-                    document.getElementById('pwdModal').classList.add('hidden');
-                    document.getElementById('pwdModal').classList.remove('hidden');
-                    return;
-                }
-            }
-            document.getElementById('buyerView').classList.add('hidden');
-            document.getElementById('sellerView').classList.add('hidden');
-            if (tab === 'buyer') document.getElementById('buyerView').classList.remove('hidden');
-            else document.getElementById('sellerView').classList.remove('hidden');
-        }
-
-        function cancelPwd() {
-            document.getElementById('pwdModal').classList.add('hidden');
-            document.getElementById('adminPwdInput').value = '';
-        }
-
-        function checkPwd() {
-            const pwd = document.getElementById('adminPwdInput').value;
-            db.ref('settings/adminAccount').once('value').then(snapshot => {
-                const acc = snapshot.val() || { password: "123" };
-                if (pwd === acc.password) {
-                    isAdminUnlocked = true;
-                    document.getElementById('pwdModal').classList.add('hidden');
-                    document.getElementById('adminPwdInput').value = '';
-                    switchTab('seller');
-                } else {
-                    showModal('Lỗi', 'Mật khẩu không chính xác!');
-                }
+        function softDeleteOrder(id) {
+            showConfirmModal('Xác nhận đưa vào Thùng Rác', 'Đơn hàng này sẽ được chuyển vào mục "Đã xóa". Bạn có thể vào đó để khôi phục lại bất cứ lúc nào.', () => {
+                db.ref('orders/' + id).update({ status: 'deleted' });
             });
         }
 
-        function adminLogout() {
-            isAdminUnlocked = false;
-            switchTab('buyer');
-            showModal('Đăng xuất', 'Đã thoát phiên quản trị an toàn.');
-        }
-
-        function switchAdminTab(tab) {
-            ['Orders', 'Products', 'Settings'].forEach(t => {
-                document.getElementById('admin' + t).classList.add('hidden');
-                document.getElementById('tab' + t).className = "px-4 py-2 text-gray-500 font-semibold";
+        function hardDeleteOrder(id) {
+            showConfirmModal('⚠️ CẢNH BÁO XÓA VĨNH VIỄN', 'Hành động này sẽ XÓA MẤT HOÀN TOÀN đơn hàng khỏi hệ thống và KHÔNG THỂ khôi phục. Bạn có chắc chắn muốn xóa?', () => {
+                db.ref('orders/' + id).remove();
             });
-            document.getElementById('admin' + (tab.charAt(0).toUpperCase() + tab.slice(1))).classList.remove('hidden');
-            document.getElementById('tab' + (tab.charAt(0).toUpperCase() + tab.slice(1))).className = "px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold";
         }
 
-        function formatPrice(num) { return num.toLocaleString('vi-VN') + 'đ'; }
 
-        let modalCb = null;
-        function showModal(title, body, cb = null) {
-            document.getElementById('modalTitle').innerText = title;
-            document.getElementById('modalBody').innerText = body;
-            document.getElementById('customModal').classList.remove('hidden');
-            modalCb = cb;
-        }
-        function closeModal() {
-            document.getElementById('customModal').classList.add('hidden');
-            if(modalCb) { modalCb(); modalCb = null; }
+        // --- LOGO & THANH TOÁN (GIỮ NGUYÊN TỪ PHIÊN BẢN TRƯỚC) ---
+        function handleLogoSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            fileToBase64(file, (base64) => {
+                tempLogoBase64 = base64;
+                document.getElementById('adminLogoPreview').src = base64;
+            });
         }
 
-        window.addEventListener('DOMContentLoaded', initData);
-    </script>
-</body>
-</html>
+        function saveLogoSettings() {
+            if (!tempLogoBase64) return showModal('Thông báo', 'Vui lòng chọn tệp logo mới trước khi lưu.');
+            localStorage.setItem('store_logo_backup', tempLogoBase64);
+            document.getElementById('storeLogoImg').src = tempLogoBase64;
+            document.getElementById('adminLogoPreview').src = tempLogoBase64;
+
+            db.ref('settings/logo').set(tempLogoBase64).then(() => {
+                showModal('Thành công', 'Đã cập nhật Logo cửa hàng mới trên hệ thống!');
+            }).catch(() => {
+                showModal('Thành công', 'Đã lưu Logo mới. (Firebase Rules từ chối nhưng máy bạn đã lưu tạm).');
+            });
+        }
+
+        function setupCropperEvents() {
+            const vp = document.getElementById('cropViewport');
+
+            vp.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX - imgX; startY = e.clientY - imgY; });
+            window.addEventListener('mousemove', (e) => { if (!isDragging) return; imgX = e.clientX - startX; imgY = e.clientY - startY; updateCropImageTransform(); });
+            window.addEventListener('mouseup', () => { isDragging = false; });
+
+            vp.addEventListener('touchstart', (e) => { isDragging = true; startX = e.touches[0].clientX - imgX; startY = e.touches[0].clientY - imgY; });
+            window.addEventListener('touchmove', (e) => { if (!isDragging) return; imgX = e.touches[0].clientX - startX; imgY = e.touches[0].clientY - startY; updateCropImageTransform(); });
+            window.addEventListener('touchend', () => { isDragging = false; });
+        }
+
+        function handleImageSelection(event, type = 'product') {
+            const file = event.target.files[0];
+            if (!file) return;
+            currentCropType = type;
+            const vp = document.getElementById('cropViewport');
+            vp.className = "relative w-full aspect-[4/3] bg-gray-100 overflow-hidden rounded-lg border shadow-inner cursor-grab select-none flex items-center justify-center";
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                cropImgObj.src = e.target.result;
+                cropImgObj.onload = function() {
+                    document.getElementById('cropModal').classList.remove('hidden');
+                    const vpWidth = vp.clientWidth, vpHeight = vp.clientHeight;
+                    let scaleX = vpWidth / cropImgObj.width, scaleY = vpHeight / cropImgObj.height;
+                    imgScale = Math.max(scaleX, scaleY);
+                    document.getElementById('zoomRange').min = imgScale * 0.2;
+                    document.getElementById('zoomRange').max = imgScale * 5;
+                    document.getElementById('zoomRange').value = imgScale;
+                    imgX = (vpWidth - cropImgObj.width * imgScale) / 2;
+                    imgY = (vpHeight - cropImgObj.height * imgScale) / 2;
+                    document.getElementById('cropImage').src = cropImgObj.src;
+                    updateCropImageTransform();
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateCropImageTransform() {
+            const el = document.getElementById('cropImage');
+            el.style.width = (cropImgObj.width * imgScale) + 'px';
+            el.style.height = (cropImgObj.height * imgScale) + 'px';
+            el.style.transform = `translate(${imgX}px, ${imgY}px)`;
+        }
+
+        function onZoomChange(val) {
+            const vp = document.getElementById('cropViewport');
+            let oldScale = imgScale;
+            imgScale = parseFloat(val);
+            let cx = vp.clientWidth / 2, cy = vp.clientHeight / 2;
+            imgX = cx - (cx - imgX) * (imgScale / oldScale);
+            imgY = cy - (cy - imgY) * (imgScale / oldScale);
+            updateCropImageTransform();
+        }
+
+        function closeCropModal() {
+            document.getElementById('cropModal').classList.add('hidden');
+            document.getElementById('newProductImage').value = '';
+        }
+
+        function confirmCropImage() {
+            const vp = document.getElementById('cropViewport');
+            const targetW = 600, targetH = 450;
+            const canvas = document.createElement('canvas');
+            canvas.width = targetW; canvas.height = targetH;
+            const ctx = canvas.getContext('2d');
+            let renderScale = targetW / vp.clientWidth;
+            ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, targetW, targetH);
+            ctx.drawImage(cropImgObj, imgX * renderScale, imgY * renderScale, cropImgObj.width * imgScale * renderScale, cropImgObj.height * imgScale * renderScale);
+            finalCroppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+            document.getElementById('cropModal').classList.add('hidden');
+            showModal('Đã cắt ảnh', 'Ảnh sản phẩm đã được căn chỉnh và sẵn sàng lưu.');
+        }
+
+        function renderPaymentInfoForBuyer() {
+            const container = document.getElementById('buyerPaymentInfo');
+            const momoContainer = document.getElementById('momoContainer');
+            const zaloContainer = document.getElementById('zaloContainer');
+
+            let hasMomo = paymentSettings.momoQr || paymentSettings.momoInfo;
+            let hasZalo = paymentSettings.zaloQr || paymentSettings.zaloInfo;
+
+            if (hasMomo || hasZalo) {
+                container.classList.remove('hidden');
+                if (hasMomo) {
+                    momoContainer.classList.remove('hidden');
+                    if (paymentSettings.momoQr) { document.getElementById('buyerMomoImg').src = paymentSettings.momoQr; document.getElementById('buyerMomoImg').classList.remove('hidden'); }
+                    document.getElementById('buyerMomoInfo').innerText = paymentSettings.momoInfo || "";
+                } else momoContainer.classList.add('hidden');
+
+                if (hasZalo) {
+                    zaloContainer.classList.remove('hidden');
+                    if (paymentSettings.zaloQr) { document.getElementById('buyerZaloImg').src = paymentSettings.zaloQr; document.getElementById('buyerZaloImg').classList.remove('hidden'); }
+                    document.getElementById('buyerZaloInfo').innerText = paymentSettings.zaloInfo || "";
+                } else zaloContainer.classList.add('hidden');
+            } else container.classList.add('hidden');
+        }
+
+        function renderProductsForBuyer() {
+            const list = document.getElementById('buyerProductList');
+            list.innerHTML = '';
+            if(Object.keys(products).length === 0) return list.innerHTML = '<div class="col-span-full text-center text-gray-500
