@@ -710,4 +710,211 @@
         function renderProductsForBuyer() {
             const list = document.getElementById('buyerProductList');
             list.innerHTML = '';
-            if(Object.keys(products).length === 0) return list.innerHTML = '<div class="col-span-full text-center text-gray-500
+            if(Object.keys(products).length === 0) return list.innerHTML = '<div class="col-span-full text-center text-gray-500 py-4">Chưa có sản phẩm nào.</div>';
+            for(let id in products) {
+                const p = products[id];
+                const qty = cart[id] ? cart[id].qty : 0;
+                list.innerHTML += `
+                    <div class="border rounded-xl overflow-hidden flex flex-col shadow-sm bg-white hover:shadow-md transition">
+                        <div class="w-full aspect-[4/3] bg-gray-100 overflow-hidden relative">
+                            <img src="${p.image || 'https://via.placeholder.com/150'}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-3 flex flex-col flex-grow">
+                            <div class="font-bold text-gray-800 text-sm mb-1 flex-grow line-clamp-2 leading-tight">${p.name}</div>
+                            <div class="text-red-600 font-extrabold text-sm mb-3">${formatPrice(p.price)}</div>
+                            ${qty === 0 
+                                ? `<button onclick="changeQty('${id}', 1)" class="w-full bg-blue-50 text-blue-600 border border-blue-200 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 transition">Thêm vào giỏ</button>`
+                                : `<div class="flex items-center justify-between bg-blue-50 rounded-lg border border-blue-200 p-1">
+                                    <button onclick="changeQty('${id}', -1)" class="w-8 h-8 bg-white text-blue-600 rounded shadow-sm font-bold text-lg leading-none">-</button>
+                                    <span class="font-extrabold text-blue-800 text-base">${qty}</span>
+                                    <button onclick="changeQty('${id}', 1)" class="w-8 h-8 bg-white text-blue-600 rounded shadow-sm font-bold text-lg leading-none">+</button>
+                                   </div>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function changeQty(id, delta) {
+            if (!cart[id] && delta > 0) cart[id] = { qty: 1, name: products[id].name, price: products[id].price, image: products[id].image }; 
+            else if (cart[id]) {
+                cart[id].qty += delta;
+                if (cart[id].qty <= 0) delete cart[id];
+            }
+            renderProductsForBuyer(); renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartContainer');
+            const totalEl = document.getElementById('cartTotal');
+            container.innerHTML = '';
+            let total = 0;
+            for (let id in cart) {
+                const item = cart[id];
+                const itemTotal = item.price * item.qty;
+                total += itemTotal;
+                container.innerHTML += `
+                    <div class="flex justify-between items-center border-b pb-2 mb-2">
+                        <div><div class="font-bold text-sm text-gray-800">${item.name}</div><div class="text-gray-500 text-xs">${formatPrice(item.price)} x ${item.qty}</div></div>
+                        <div class="font-bold text-red-600">${formatPrice(itemTotal)}</div>
+                    </div>
+                `;
+            }
+            if(Object.keys(cart).length === 0) container.innerHTML = 'Chưa có sản phẩm nào.';
+            totalEl.innerText = formatPrice(total);
+        }
+
+        function placeOrder() {
+            if (Object.keys(cart).length === 0) return showModal('Giỏ hàng trống', 'Vui lòng chọn ít nhất 1 sản phẩm.');
+            const name = document.getElementById('customerName').value.trim();
+            if (!name) return showModal('Thiếu thông tin', 'Vui lòng nhập họ tên hoặc biệt danh của bạn.');
+
+            db.ref('orders').push({ customer: { name }, items: cart, timestamp: Date.now(), status: 'pending' }).then(() => {
+                showModal('🎉 Đặt hàng thành công!', 'Đơn hàng đã được gửi đi. Hãy kiểm tra thông tin thanh toán phía dưới (nếu có).');
+                cart = {}; document.getElementById('customerName').value = '';
+                renderProductsForBuyer(); renderCart();
+            });
+        }
+
+        function renderProductsForAdmin() {
+            const list = document.getElementById('adminProductList');
+            list.innerHTML = '';
+            for(let id in products) {
+                const p = products[id];
+                list.innerHTML += `
+                    <div class="border rounded-xl p-3 flex items-center bg-gray-50 shadow-sm">
+                        <img src="${p.image || ''}" class="w-14 h-14 rounded-lg object-cover mr-3 border bg-white">
+                        <div class="flex-grow"><div class="font-bold text-sm text-gray-800">${p.name}</div><div class="text-red-600 font-extrabold text-sm">${formatPrice(p.price)}</div></div>
+                        <button onclick="editProduct('${id}')" class="text-blue-600 p-2 hover:bg-blue-100 rounded-lg mr-1 transition" title="Sửa">✏️</button>
+                        <button onclick="deleteProduct('${id}')" class="text-red-500 p-2 hover:bg-red-100 rounded-lg transition" title="Xóa">🗑️</button>
+                    </div>
+                `;
+            }
+        }
+
+        function fileToBase64(file, callback) { const reader = new FileReader(); reader.onload = function(e) { callback(e.target.result); }; reader.readAsDataURL(file); }
+
+        function saveProduct() {
+            const editId = document.getElementById('editProductId').value;
+            const name = document.getElementById('newProductName').value.trim();
+            const price = parseInt(document.getElementById('newProductPrice').value);
+
+            if(!name || isNaN(price)) return showModal('Lỗi', 'Nhập đầy đủ tên và giá sản phẩm hợp lệ.');
+            let currentImg = editId && products[editId] ? products[editId].image : "";
+            let imageToSave = finalCroppedBase64 || currentImg;
+
+            const productData = { name, price, image: imageToSave };
+            if (editId) {
+                db.ref('products/' + editId).update(productData).then(() => { showModal('Thành công', 'Đã cập nhật thông tin sản phẩm.'); resetProductForm(); });
+            } else {
+                db.ref('products').push(productData).then(() => { showModal('Thành công', 'Đã thêm sản phẩm mới.'); resetProductForm(); });
+            }
+        }
+
+        function editProduct(id) {
+            const p = products[id]; if(!p) return;
+            document.getElementById('editProductId').value = id;
+            document.getElementById('newProductName').value = p.name;
+            document.getElementById('newProductPrice').value = p.price;
+            document.getElementById('productFormTitle').innerText = "Cập nhật sản phẩm";
+            document.getElementById('saveProductBtn').innerText = "Lưu Thay Đổi";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            finalCroppedBase64 = ""; window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetProductForm() {
+            document.getElementById('editProductId').value = ''; document.getElementById('newProductName').value = '';
+            document.getElementById('newProductPrice').value = ''; document.getElementById('newProductImage').value = '';
+            document.getElementById('productFormTitle').innerText = "Thêm sản phẩm mới";
+            document.getElementById('saveProductBtn').innerText = "Thêm Sản Phẩm";
+            document.getElementById('cancelEditBtn').classList.add('hidden'); finalCroppedBase64 = "";
+        }
+
+        function deleteProduct(id) {
+            showConfirmModal("Xóa Sản Phẩm", "Bạn có chắc muốn xóa vĩnh viễn sản phẩm này khỏi danh sách đang bán?", () => db.ref('products/' + id).remove());
+        }
+
+        function savePaymentSettings() {
+            let newSettings = {
+                momoQr: paymentSettings.momoQr || "", momoInfo: document.getElementById('momoInfoInput').value,
+                zaloQr: paymentSettings.zaloQr || "", zaloInfo: document.getElementById('zaloInfoInput').value
+            };
+            const mF = document.getElementById('momoQrInput'), zF = document.getElementById('zaloQrInput');
+            let processed = 0, totalToProcess = (mF.files.length > 0 ? 1 : 0) + (zF.files.length > 0 ? 1 : 0);
+
+            if (totalToProcess === 0) return db.ref('settings/payment').set(newSettings).then(() => showModal('Thành công', 'Đã lưu cấu hình thanh toán.'));
+
+            if (mF.files.length > 0) fileToBase64(mF.files[0], (b64) => { newSettings.momoQr = b64; processed++; if(processed === totalToProcess) db.ref('settings/payment').set(newSettings).then(() => showModal('Xong', 'Đã lưu thanh toán.')); });
+            if (zF.files.length > 0) fileToBase64(zF.files[0], (b64) => { newSettings.zaloQr = b64; processed++; if(processed === totalToProcess) db.ref('settings/payment').set(newSettings).then(() => showModal('Xong', 'Đã lưu thanh toán.')); });
+        }
+
+        function changePassword() {
+            const oldP = document.getElementById('oldPwd').value, newP = document.getElementById('newPwd').value, confP = document.getElementById('confirmNewPwd').value;
+            if (!oldP || !newP || !confP) return showModal('Lỗi', 'Vui lòng nhập đầy đủ thông tin mật khẩu.');
+            if (newP !== confP) return showModal('Lỗi', 'Mật khẩu xác nhận không khớp.');
+            db.ref('settings/adminAccount').once('value').then(snapshot => {
+                const acc = snapshot.val() || { email: "haiconheo1306@gmail.com", password: "123" };
+                if (oldP !== acc.password) return showModal('Lỗi', 'Mật khẩu hiện tại không đúng.');
+                db.ref('settings/adminAccount').set({ email: acc.email, password: newP }).then(() => {
+                    document.getElementById('oldPwd').value = ''; document.getElementById('newPwd').value = ''; document.getElementById('confirmNewPwd').value = '';
+                    showModal('Thành công', 'Đã đổi mật khẩu quản trị thành công!');
+                });
+            });
+        }
+
+        function switchTab(tab) {
+            if (tab === 'seller') {
+                if (!isAdminUnlocked) { document.getElementById('pwdModal').classList.remove('hidden'); return; }
+            }
+            document.getElementById('buyerView').classList.add('hidden'); document.getElementById('sellerView').classList.add('hidden');
+            if (tab === 'buyer') document.getElementById('buyerView').classList.remove('hidden'); else document.getElementById('sellerView').classList.remove('hidden');
+        }
+
+        function cancelPwd() { document.getElementById('pwdModal').classList.add('hidden'); document.getElementById('adminPwdInput').value = ''; }
+
+        function checkPwd() {
+            const pwd = document.getElementById('adminPwdInput').value;
+            db.ref('settings/adminAccount').once('value').then(snapshot => {
+                const acc = snapshot.val() || { password: "123" };
+                if (pwd === acc.password) {
+                    isAdminUnlocked = true; document.getElementById('pwdModal').classList.add('hidden'); document.getElementById('adminPwdInput').value = '';
+                    switchTab('seller');
+                } else showModal('Lỗi', 'Mật khẩu không chính xác!');
+            });
+        }
+
+        function adminLogout() { isAdminUnlocked = false; switchTab('buyer'); showModal('Đăng xuất', 'Đã thoát phiên quản trị an toàn.'); }
+
+        function switchAdminTab(tab) {
+            ['Orders', 'Products', 'Settings'].forEach(t => { document.getElementById('admin' + t).classList.add('hidden'); document.getElementById('tab' + t).className = "px-4 py-2 text-gray-500 font-semibold transition"; });
+            document.getElementById('admin' + (tab.charAt(0).toUpperCase() + tab.slice(1))).classList.remove('hidden');
+            document.getElementById('tab' + (tab.charAt(0).toUpperCase() + tab.slice(1))).className = "px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold transition";
+        }
+
+        function formatPrice(num) { return num.toLocaleString('vi-VN') + 'đ'; }
+
+        // --- HỆ THỐNG MODAL ---
+        let modalCb = null;
+        function showModal(title, body, cb = null) {
+            document.getElementById('modalTitle').innerText = title; document.getElementById('modalBody').innerText = body;
+            document.getElementById('customModal').classList.remove('hidden'); modalCb = cb;
+        }
+        function closeModal() { document.getElementById('customModal').classList.add('hidden'); if(modalCb) { modalCb(); modalCb = null; } }
+
+        let confirmCb = null;
+        function showConfirmModal(title, body, cb) {
+            document.getElementById('confirmTitle').innerText = title; document.getElementById('confirmBody').innerText = body;
+            document.getElementById('confirmModal').classList.remove('hidden'); confirmCb = cb;
+        }
+        function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); confirmCb = null; }
+        
+        document.getElementById('confirmOkBtn').addEventListener('click', () => {
+            document.getElementById('confirmModal').classList.add('hidden');
+            if(confirmCb) { confirmCb(); confirmCb = null; }
+        });
+
+        window.addEventListener('DOMContentLoaded', initData);
+    </script>
+</body>
+</html>
